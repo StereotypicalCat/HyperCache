@@ -1,22 +1,39 @@
+
+// Import and create the append only log
 import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
+import {convertPlaintextToHashTree} from "./TreeConverter.js";
+import {JSDOM} from "jsdom";
 
 const aol = new AppendOnlyLog();
 
-let asyncTest = async (peerNum, aol) => {
-    aol.append("Hello from peer " + peerNum);
 
-    // Wait for a random amount of time
-    for (let i = 0; i < 10; i++){
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
-        aol.append("Hello again from peer " + peerNum);
-    }
+
+let crawlWebsite = async (url) => {
+    let testDoc = '<!DOCTYPE html><html><body class="test" otherAttribute="hello"><p class="Helloitsme">Element1</p><p>Element2</p><p>Element3</p></body></html>'
+    return testDoc
 }
 
-for (let i = 0; i < 10; i++){
-    asyncTest(i, aol);
+
+
+
+function generateHashTree(doc) {
+
+
+
+    return undefined;
 }
 
-// Wait 10 seconds, then the read log
-setTimeout(async () => {
-    console.log(await aol.read());
-}, 10000);
+let startPeer = async (peerNum, aol) => {
+    // This peer should do 3 things
+
+    // First crawl a website and create structure 1
+    let doc = await crawlWebsite('filler');
+    let hashTree = await convertPlaintextToHashTree(doc)
+
+    console.log("Printing Tree")
+    console.log(hashTree)
+    console.log("Calling Print")
+    hashTree.print();
+}
+
+startPeer(1, aol)
