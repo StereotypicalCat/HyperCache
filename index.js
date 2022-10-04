@@ -61,24 +61,11 @@ let startPeer = async (peerNum, aol) => {
         //hashTree2.print();
     }
 
-    let alreadyExists = false;
+    let {wasSuccess, index} = await aol.appendIfNotExists(hashTree, peerNum)
 
-    let treeElements = await aol.read()
-
-    for (const readElement of treeElements) {
-        if(readElement[1].value === hashTree.value){
-            alreadyExists = true;
-        }
+    if (!wasSuccess){
+        aol.append("I saw the hash at " + index + "too", peerNum)
     }
-
-    if (alreadyExists){
-        aol.append("I (" + peerNum + ") saw the following too: " + hashTree.value)
-    }
-    else{
-        aol.append([peerNum, hashTree])
-    }
-
-
 }
 
 for (let i = 0; i < 10; i++) {
@@ -88,4 +75,4 @@ for (let i = 0; i < 10; i++) {
 // Wait 10 seconds, then the read log
 setTimeout(async () => {
     console.log(await aol.read());
-}, 10000);
+}, 3000);
