@@ -1,0 +1,6 @@
+# Project exclude paths
+/node_modules/
+!/my-first-dataset/
+!/main/
+!/clone/
+!/test-files/
