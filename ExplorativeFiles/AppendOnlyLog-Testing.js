@@ -1,4 +1,4 @@
-import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
+import {AppendOnlyLog} from "../SimulatedAppendOnlyLog.js";
 
 const aol = new AppendOnlyLog();
 
