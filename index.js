@@ -34,24 +34,58 @@ function generateHashTree(doc) {
 }
 
 let startPeer = async (peerNum, aol) => {
+
+    setTimeout(async () => {}, Math.random() * 1000);
+
     // This peer should do 3 things
 
-    // First crawl a website and create structure 1
-    let doc = await crawlWebsite('debug1');
-    let hashTree = await convertPlaintextToHashTree(doc)
+    let doc;
+    let hashTree;
 
-    //console.log("Printing Tree")
-    //console.log(hashTree)
-    console.log("Calling Print")
-    hashTree.print();
+    if (peerNum % 2 === 0){
+        // First crawl a website and create structure 1
+        doc = await crawlWebsite('debug1');
+        hashTree = await convertPlaintextToHashTree(doc)
+        //console.log("Printing Tree")
+        //console.log(hashTree)
+        //console.log("Calling Print")
+        //hashTree.print();
+    }
+    if (peerNum % 2 === 1){
+        doc = await crawlWebsite('debug2');
+        hashTree = await convertPlaintextToHashTree(doc)
 
-    let doc2 = await crawlWebsite('debug2');
-    let hashTree2 = await convertPlaintextToHashTree(doc2)
+        //console.log("Printing Tree")
+        //console.log(hashTree2)
+        //console.log("Calling Print")
+        //hashTree2.print();
+    }
 
-    //console.log("Printing Tree")
-    //console.log(hashTree2)
-    console.log("Calling Print")
-    hashTree2.print();
+    let alreadyExists = false;
+
+    let treeElements = await aol.read()
+
+    for (const readElement of treeElements) {
+        if(readElement[1].value === hashTree.value){
+            alreadyExists = true;
+        }
+    }
+
+    if (alreadyExists){
+        aol.append("I (" + peerNum + ") saw the following too: " + hashTree.value)
+    }
+    else{
+        aol.append([peerNum, hashTree])
+    }
+
+
 }
 
-startPeer(1, aol)
+for (let i = 0; i < 10; i++) {
+    startPeer(i, aol)
+}
+
+// Wait 10 seconds, then the read log
+setTimeout(async () => {
+    console.log(await aol.read());
+}, 10000);
