@@ -13,13 +13,16 @@ function hash(string) {
     });
 }
 
-let HTMLtoJSDOM = async (plaintext) => {
+let HTMLtoJSDOM = async (plaintext, debug=false) => {
     const dom = new JSDOM(plaintext);
     const resultHtml = dom.serialize();
-    const formattedHtml = prettier.format(resultHtml, { parser: "html" });
+    if(debug){
+        const formattedHtml = prettier.format(resultHtml, { parser: "html" });
 
-    console.log("Formatted:")
-    console.log(formattedHtml)
+        console.log("Formatted:")
+        console.log(formattedHtml)
+
+    }
 
     return dom;
 }
@@ -117,6 +120,7 @@ function convertToTree(jsdomObject){
 
 
 async function convertTreeToHashTree (tree) {
+/*
     async function hashNonRootTreeRecursive(tree){
         if(tree.children !== undefined){
             for (const child of tree.children) {
@@ -129,15 +133,20 @@ async function convertTreeToHashTree (tree) {
             resolve()
         })
     }
+*/
 
 
+    let valOfChildren = "";
 
     for (const child of tree.children) {
-        await hashNonRootTreeRecursive(child)
+        await convertTreeToHashTree(child, false)
+
+        valOfChildren += child.value;
     }
 
+    let newVal = await hash(tree.value + valOfChildren)
 
-    tree.value = await hash(tree.value)
+    tree.value = newVal
 
     return tree;
 }
@@ -146,9 +155,6 @@ async function convertTreeToHashTree (tree) {
 async function convertPlaintextToHashTree(plaintext){
     let jsdom = await HTMLtoJSDOM(plaintext);
     let tree = await convertToTree(jsdom.window.document.body);
-
-    tree.print()
-
     let hashTree = await convertTreeToHashTree(tree);
 
     return hashTree;
