@@ -43,7 +43,7 @@ class Tree {
         console.log(' '.repeat(spaces) +  this.value.substring(0, 32))
 
         // print the value of each child node
-        this.children.forEach(child => child.print(spaces = 4));
+        this.children.forEach(child => child.print(4 + spaces));
     }
 }
 
@@ -80,8 +80,14 @@ function convertToTree(jsdomObject){
 
     // get innerhtml of jsdom node or empty string if there is none
 
-    if (jsdomObject.innerText !== undefined){
-        innerText = jsdomObject.innerText;
+    //console.log(jsdomObject.textContent)
+    //console.log(jsdomObject.innerHTML)
+    //console.log(jsdomObject.innerText)
+
+    var clone = jsdomObject.cloneNode(false);
+
+    if (clone.textContent !== undefined){
+        innerText = clone.textContent;
     }
     else{
         innerText = "";
@@ -111,42 +117,27 @@ function convertToTree(jsdomObject){
 
 
 async function convertTreeToHashTree (tree) {
-
-
     async function hashNonRootTreeRecursive(tree){
-
-        let promises = []
-
-        if(!tree.children === undefined){
+        if(tree.children !== undefined){
             for (const child of tree.children) {
-                promises.push(hashNonRootTreeRecursive(child))
+                await hashNonRootTreeRecursive(child)
             }
         }
 
         return new Promise(async (resolve) => {
             tree.value = (await hash(tree.value)).substring(0, 4)
-
-            for (const promise in promises) {
-                await promise
-            }
             resolve()
         })
-
     }
 
-    let promises = []
 
-    //console.log(tree)
 
     for (const child of tree.children) {
-        promises.push(hashNonRootTreeRecursive(child))
+        await hashNonRootTreeRecursive(child)
     }
+
+
     tree.value = await hash(tree.value)
-
-
-    for (const promise in promises) {
-        await promise
-    }
 
     return tree;
 }
@@ -155,6 +146,8 @@ async function convertTreeToHashTree (tree) {
 async function convertPlaintextToHashTree(plaintext){
     let jsdom = await HTMLtoJSDOM(plaintext);
     let tree = await convertToTree(jsdom.window.document.body);
+
+    tree.print()
 
     let hashTree = await convertTreeToHashTree(tree);
 
