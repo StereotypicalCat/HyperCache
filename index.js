@@ -1,8 +1,9 @@
 
 // Import and create the append only log
-import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
-import {convertPlaintextToHashTree} from "./TreeConverter.js";
+import {AppendOnlyLog, messageType} from "./SimulatedAppendOnlyLog.js";
+import {convertPlaintextToHashTree} from "./TreeManager.js";
 import {JSDOM} from "jsdom";
+import {printTrustMatrix} from "./TrustManager.js";
 
 // Think about attack vector where adversary sends wrong log to new user (is this out of scope / countered by braha protocol)
 const aol = new AppendOnlyLog();
@@ -62,18 +63,28 @@ let startPeer = async (peerNum, aol) => {
         //hashTree2.print();
     }
 
-    let {wasSuccess, index} = await aol.appendIfNotExists(hashTree, peerNum)
+    let {wasSuccess, index} = await aol.tryAddNewVersion(hashTree, peerNum)
 
     if (!wasSuccess){
-        aol.append("I saw the hash at " + index + " too", peerNum)
+        await aol.tryAddNewValidation(index, peerNum)
     }
 }
 
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 3; i++) {
     startPeer(i, aol)
 }
 
 // Wait 10 seconds, then the read log
 setTimeout(async () => {
-    console.log(await aol.read());
+    //console.log(await aol.read());
+    // print versions and validations from log
+    let {validations, versions} = await aol.read();
+    console.log("Printing Versions")
+    console.log(versions)
+    console.log("Printing Validations")
+    console.log(validations)
+    // Printing Trust Matrix
+    console.log("Printing Trust Matrix")
+    await aol.print();
+    await printTrustMatrix(aol);
 }, 3000);
