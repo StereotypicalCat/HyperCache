@@ -3,7 +3,7 @@
 import {AppendOnlyLog, messageType} from "./SimulatedAppendOnlyLog.js";
 import {convertPlaintextToHashTree} from "./TreeManager.js";
 import {JSDOM} from "jsdom";
-import {printTrustMatrix} from "./TrustManager.js";
+import {printTrustMatrix, printTrustOfEachPeer} from "./TrustManager.js";
 
 // Think about attack vector where adversary sends wrong log to new user (is this out of scope / countered by braha protocol)
 const aol = new AppendOnlyLog();
@@ -70,7 +70,7 @@ let startPeer = async (peerNum, aol) => {
     }
 }
 
-for (let i = 0; i < 3; i++) {
+for (let i = 0; i < 10; i++) {
     startPeer(i, aol)
 }
 
@@ -87,4 +87,8 @@ setTimeout(async () => {
     console.log("Printing Trust Matrix")
     await aol.print();
     await printTrustMatrix(aol);
+    // print trust of all users
+    console.log("Printing Trust of all users")
+    await printTrustOfEachPeer(aol);
+
 }, 3000);
