@@ -4,6 +4,7 @@ import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
 import {convertPlaintextToHashTree} from "./TreeConverter.js";
 import {JSDOM} from "jsdom";
 
+// Think about attack vector where adversary sends wrong log to new user (is this out of scope / countered by braha protocol)
 const aol = new AppendOnlyLog();
 
 
@@ -64,7 +65,7 @@ let startPeer = async (peerNum, aol) => {
     let {wasSuccess, index} = await aol.appendIfNotExists(hashTree, peerNum)
 
     if (!wasSuccess){
-        aol.append("I saw the hash at " + index + "too", peerNum)
+        aol.append("I saw the hash at " + index + " too", peerNum)
     }
 }
 

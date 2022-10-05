@@ -26,20 +26,20 @@ class AppendOnlyLog{
             let foundIndex = -1;
 
             for (let i = 0; i < this.log.length; i++) {
-                if(this.log[i].value === value.value){
+                if(this.log[i].tree.value === value.value){
                     didFind = true
                     foundIndex = i;
                 }
             }
 
             if (didFind){
-                return (false, foundIndex);
+                return {wasSuccess: false, index: foundIndex}
             } else{
                 this.log.push({
                     tree: value,
                     peerId: peerId
                 });
-                return (true, this.log.length-1);
+                return {wasSuccess: true, index: this.log.length - 1}
             }
 
 
