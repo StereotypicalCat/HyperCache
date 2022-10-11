@@ -2,12 +2,15 @@
 const trust_for_new_resource = 20;
 const trust_for_validating_resource = 5;
 
-// TODO:
-// Somehting is wrong with calulcating peer trust. Mixed up peerId and indexes.
-// Calculate trust of version
-
 async function get_unique_peers(aol){
-    let {versions, validations} = await aol.read();
+
+    //return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    // return list with numers 0 to 5
+    return Array.from(Array(5).keys());
+
+
+    // uncomment if switching from linear peer ids to
+    /*let {versions, validations} = await aol.read();
     // Count number of unique peers
     let uniquePeers = [];
     for (let i = 0; i < versions.length; i++) {
@@ -19,7 +22,8 @@ async function get_unique_peers(aol){
         if (!uniquePeers.includes(validations[i].peerId)){
             uniquePeers.push(validations[i].peerId)
         }
-    }
+    }*/
+
     return uniquePeers;
 }
 
@@ -51,6 +55,9 @@ async function calculate_user_trust_of_user(aol, peerIdSource, peerIdTarget){
             }
         }
     }
+
+    //console.log("Peer " + peerIdSource + " has trust " + trust + " for peer " + peerIdTarget);
+
     return trust;
 }
 
@@ -73,15 +80,26 @@ async function calculate_full_trust_of_user(aol, peerId){
 async function calculate_trust_of_version(aol, hash){
     let {versions, validations} = await aol.read();
 
-    let trust = 0;
-
+    // Figure out what index the hash is at
+    let index = -1;
     for (let i = 0; i < versions.length; i++) {
         if (versions[i].tree.value === hash){
-            for (let j = 0; j < validations.length; j++) {
-                if (validations[j].index === i){
-                    trust += validationse;
-                }
-            }
+            index = i;
+            break;
+        }
+    }
+
+    if (index === -1){
+        console.log("couldn't find hash")
+        return 0;
+    }
+
+    let trust = await calculate_full_trust_of_user(aol, versions[index].peerId);
+
+    // the trust of the version is the sum of the trust of the peers that validated it plus the peer who placed it there
+    for (let i = 0; i < validations.length; i++) {
+        if (validations[i].index === index){
+            trust += await calculate_full_trust_of_user(aol, validations[i].peerId);
         }
     }
 
@@ -89,8 +107,23 @@ async function calculate_trust_of_version(aol, hash){
 
 }
 
+let latestTrustMatrix;
+let latestVersionLength;
+let latestValidationLength;
+
 async function calculate_trust_matrix(aol){
+    let {versions, validations} = await aol.read();
+
+    if (latestTrustMatrix !== undefined && latestVersionLength === versions.length && latestValidationLength === validations.length){
+        return latestTrustMatrix;
+    }
+
+    latestVersionLength = versions.length;
+    latestValidationLength = validations.length;
+
     let uniquePeers = await get_unique_peers(aol);
+
+
 
     // Create 2d array of trust values between peers
     let trustMatrix = [];
@@ -101,7 +134,9 @@ async function calculate_trust_matrix(aol){
         }
     }
 
+    latestTrustMatrix = trustMatrix;
     return trustMatrix;
+
 }
 
 async function printTrustMatrix(aol){
@@ -118,4 +153,4 @@ async function printTrustOfEachPeer(aol){
     }
 }
 
-export {calculate_user_trust_of_user, printTrustMatrix, printTrustOfEachPeer}
+export {calculate_user_trust_of_user, printTrustMatrix, printTrustOfEachPeer, calculate_trust_of_version}

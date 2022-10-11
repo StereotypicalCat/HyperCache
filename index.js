@@ -3,7 +3,12 @@
 import {AppendOnlyLog, messageType} from "./SimulatedAppendOnlyLog.js";
 import {convertPlaintextToHashTree} from "./TreeManager.js";
 import {JSDOM} from "jsdom";
-import {printTrustMatrix, printTrustOfEachPeer} from "./TrustManager.js";
+import {printTrustMatrix, printTrustOfEachPeer, calculate_trust_of_version} from "./TrustManager.js";
+
+// import crypto library and generate and print a UUID
+import pkg from 'uuid';
+const { v4: uuidv4 } = pkg;
+
 
 // Think about attack vector where adversary sends wrong log to new user (is this out of scope / countered by braha protocol)
 const aol = new AppendOnlyLog();
@@ -25,26 +30,23 @@ let crawlWebsite = async (url) => {
     return retDoc
 }
 
-
-
-
-function generateHashTree(doc) {
-
-
-
-    return undefined;
+function delay(time) {
+    return new Promise(resolve => setTimeout(resolve, time));
 }
 
 let startPeer = async (peerNum, aol) => {
 
-    setTimeout(async () => {}, Math.random() * 1000);
+    await delay(Math.random() * 2000)
+
+    // print the second mark when the peer starts
+    console.log("peer " + peerNum + " started");
 
     // This peer should do 3 things
 
     let doc;
     let hashTree;
 
-    if (peerNum % 2 === 0){
+    if (Math.random() >= 0.5){
         // First crawl a website and create structure 1
         doc = await crawlWebsite('debug1');
         hashTree = await convertPlaintextToHashTree(doc)
@@ -53,7 +55,7 @@ let startPeer = async (peerNum, aol) => {
         //console.log("Calling Print")
         //hashTree.print();
     }
-    if (peerNum % 2 === 1){
+    else {
         doc = await crawlWebsite('debug2');
         hashTree = await convertPlaintextToHashTree(doc)
 
@@ -70,7 +72,9 @@ let startPeer = async (peerNum, aol) => {
     }
 }
 
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 5; i++) {
+    // Replace with something like public/private key
+    //     startPeer(uuidv4(), aol)
     startPeer(i, aol)
 }
 
@@ -91,4 +95,12 @@ setTimeout(async () => {
     console.log("Printing Trust of all users")
     await printTrustOfEachPeer(aol);
 
-}, 3000);
+    console.log("trust of the different versions")
+    // For each distinct version, call the calculate_trust_of_version function
+    let distinctVersions = [...new Set(versions.map(item => item.tree.value))];
+    for (let i = 0; i < distinctVersions.length; i++) {
+        console.log("version " + distinctVersions[i] + " has trust " + await calculate_trust_of_version(aol, distinctVersions[i]))
+    }
+
+
+}, 6000);
