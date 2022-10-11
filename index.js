@@ -4,6 +4,7 @@ import {AppendOnlyLog, messageType} from "./SimulatedAppendOnlyLog.js";
 import {convertPlaintextToHashTree} from "./TreeManager.js";
 import {JSDOM} from "jsdom";
 import {printTrustMatrix, printTrustOfEachPeer, calculate_trust_of_version} from "./TrustManager.js";
+import {startPurePeer, startSometimesMaliciousPeer, startConsistenlyMaliciousPeer} from "./PeerBehaviours.js";
 
 // import crypto library and generate and print a UUID
 import pkg from 'uuid';
@@ -15,67 +16,31 @@ const aol = new AppendOnlyLog();
 
 
 
+
+
 let crawlWebsite = async (url) => {
 
     let retDoc;
 
-    if (url == "debug1"){
-        retDoc = '<!DOCTYPE html><html><body><p>This is a test <b>bold</b> text</p><p>Other text</p></body></html>'
-    }
-
-    else if (url == "debug2"){
-        retDoc = '<!DOCTYPE html><html><body><p>This is a test <i>italic</i> text</p><p>Other text</p></body></html>'
-    }
     //let testDoc = '<!DOCTYPE html><html><body class="test" otherAttribute="hello"><p class="Helloitsme">Element1</p><p>Element2</p><p>Element3</p></body></html>'
     return retDoc
 }
 
-function delay(time) {
-    return new Promise(resolve => setTimeout(resolve, time));
+
+
+
+let purePeersToGenerate = 10;
+let consistenlyMaliciousPeersToGenerate = 2;
+let sometimesMaliciousPeersToGenerate = 2;
+
+for (let i = 0; i < purePeersToGenerate; i++) {
+    startPurePeer(i, aol)
 }
-
-let startPeer = async (peerNum, aol) => {
-
-    await delay(Math.random() * 2000)
-
-    // print the second mark when the peer starts
-    console.log("peer " + peerNum + " started");
-
-    // This peer should do 3 things
-
-    let doc;
-    let hashTree;
-
-    if (Math.random() >= 0.5){
-        // First crawl a website and create structure 1
-        doc = await crawlWebsite('debug1');
-        hashTree = await convertPlaintextToHashTree(doc)
-        //console.log("Printing Tree")
-        //console.log(hashTree)
-        //console.log("Calling Print")
-        //hashTree.print();
-    }
-    else {
-        doc = await crawlWebsite('debug2');
-        hashTree = await convertPlaintextToHashTree(doc)
-
-        //console.log("Printing Tree")
-        //console.log(hashTree2)
-        //console.log("Calling Print")
-        //hashTree2.print();
-    }
-
-    let {wasSuccess, index} = await aol.tryAddNewVersion(hashTree, peerNum)
-
-    if (!wasSuccess){
-        await aol.tryAddNewValidation(index, peerNum)
-    }
+for (let i = purePeersToGenerate; i < purePeersToGenerate + consistenlyMaliciousPeersToGenerate; i++) {
+    startConsistenlyMaliciousPeer(i, aol)
 }
-
-for (let i = 0; i < 5; i++) {
-    // Replace with something like public/private key
-    //     startPeer(uuidv4(), aol)
-    startPeer(i, aol)
+for (let i = purePeersToGenerate + consistenlyMaliciousPeersToGenerate; i < purePeersToGenerate + consistenlyMaliciousPeersToGenerate + sometimesMaliciousPeersToGenerate; i++) {
+    startSometimesMaliciousPeer(i, aol)
 }
 
 // Wait 10 seconds, then the read log

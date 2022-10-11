@@ -6,7 +6,7 @@ async function get_unique_peers(aol){
 
     //return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     // return list with numers 0 to 5
-    return Array.from(Array(5).keys());
+    return Array.from(Array(14).keys());
 
 
     // uncomment if switching from linear peer ids to
