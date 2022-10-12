@@ -1,37 +1,53 @@
 import {Mutex} from "async-mutex";
 
-const messageType = {
-    APPEND: 0,
-    VALIDATE: 1
-}
-
 class AppendOnlyLog{
+
     constructor(){
-        this.versions = [];
-        this.validations = [];
+        this.websites = new Map();
+        this.logHistory = [];
         this.lock = new Mutex();
     }
 
-    async tryAddNewVersion(value, peerId){
+    async getLogLength(){
         const release = await this.lock.acquire();
         try{
-            let didFind = false;
-            let foundIndex = -1;
+            return this.logHistory.length;
+        }
+        finally {
+            release();
+        }
+    }
 
-            for (let i = 0; i < this.versions.length; i++) {
-                if(this.versions[i].tree.value === value.value){
-                    didFind = true
-                    foundIndex = i;
-                }
+    async tryAddNewVersion(tree, peerId, url){
+        const release = await this.lock.acquire();
+        try{
+            let toplevelhash = tree.value;
+
+            // Check if the URL is new
+
+            let firstVersionOfWebsite = !this.websites.has(url)
+            if(firstVersionOfWebsite){
+                this.websites.set(url, new Map())
             }
-            if (didFind){
-                return {wasSuccess: false, index: foundIndex}
+
+            // Append the version if it is new.
+
+
+            let firstVersionOfValue = !this.websites.get(url).has(toplevelhash)
+
+            if(firstVersionOfValue) {
+                this.websites.get(url).set(toplevelhash, {
+                    tree: tree,
+                    peerId: peerId,
+                    signature: null,
+                    validations: []
+                })
+
+                this.logHistory.push(peerId + " submitted version " + toplevelhash + " for url " + url)
+
+                return true
             } else{
-                this.versions.push({
-                    tree: value,
-                    peerId: peerId
-                });
-                return {wasSuccess: true, index: this.versions.length - 1}
+                return false
             }
         } finally {
             release();
@@ -39,13 +55,26 @@ class AppendOnlyLog{
 
     }
 
-    async tryAddNewValidation(index, peerId){
+    async tryAddNewValidation(tree, peerId, url){
         const release = await this.lock.acquire();
+
+        const toplevelhash = tree.value;
+
         try{
-            this.validations.push({
-                index: index,
-                peerId: peerId
+            if(this.websites.get(url).get(toplevelhash) == undefined){
+                console.log("Undefined stuff")
+                console.log(url)
+                console.log(toplevelhash)
+                console.log(this.websites)
+                console.log(this.websites.get(url))
+            }
+
+            this.websites.get(url).get(toplevelhash).validations.push({
+                peerId: peerId,
+                signature: null
             })
+            this.logHistory.push(peerId + " validated version " + toplevelhash + " for url " + url)
+
         } finally {
             release();
         }
@@ -55,15 +84,34 @@ class AppendOnlyLog{
         const release = await this.lock.acquire();
 
         try{
-            let validations = this.validations;
-            let versions = this.versions;
-            return {validations: validations, versions: versions}
+            return this.websites;
         }
         finally {
             release();
         }
+    }
+    async readWithLogHistoryLength(){
+        const release = await this.lock.acquire();
 
+        try{
+            return {websites: this.websites, logHistoryLength: this.logHistory.length};
+        }
+        finally {
+            release();
+        }
+    }
 
+    async printLogHistory(){
+        const release = await this.lock.acquire();
+
+        try{
+            for (const logHistoryElement of this.logHistory) {
+                console.log(logHistoryElement)
+            }
+        }
+        finally {
+            release();
+        }
     }
 
 
@@ -73,33 +121,37 @@ class AppendOnlyLog{
         console.log("Printing Log")
 
         // Contains each hash and the peers supporting that hash
-        let map = new Map();
 
         try{
-            // Add versions
-            for (let i = 0; i < this.versions.length; i++) {
-                let elem = this.versions[i];
-                map.set(elem.tree.value, [elem.peerId]);
-            }
-            // Append peerIDs of validtors to each version
-
-            for (let i = 0; i < this.validations.length; i++) {
-                let elem = this.validations[i];
-                let peerIDs = map.get(this.versions[elem.index].tree.value);
-                peerIDs.push(elem.peerId);
-                map.set(this.versions[elem.index].tree.value, peerIDs);
-            }
-
-
             // Print each hash and the peers supporting that hash
-            for (let [key, value] of map) {
-                console.log(key + " = " + value);
+            for (let [url, versions] of this.websites) {
+                for (let [hash, versionInfo] of versions){
+                    let supportingPeers = versionInfo.validations.map((validation) => validation.peerId)
+
+                    console.log("url: " + url + " w/ hash: " + hash + " support =  " + supportingPeers.join(", "))
+                }
             }
 
         } finally {
             release();
         }
     }
+
+    async printAsAOL(){
+        const release = await this.lock.acquire();
+
+        try{
+            console.log("Printing Log")
+            for(let i = 0; i < this.logHistory.length; i++){
+                console.log(this.logHistory[i])
+            }
+        }
+        finally {
+            release();
+        }
+
+    }
+
 }
 
-export {AppendOnlyLog, messageType};
+export {AppendOnlyLog};

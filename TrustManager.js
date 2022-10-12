@@ -33,28 +33,42 @@ async function calculate_user_trust_of_user(aol, peerIdSource, peerIdTarget){
         return Infinity;
     }
 
-    let {versions, validations} = await aol.read();
+    let websites = await aol.read();
+
 
     let trust = 0;
-    for (let i = 0; i < versions.length; i++) {
-        // For each version the target peer has added, check if the source peer has validated it
-        if (versions[i].peerId === peerIdTarget){
-            for (let j = 0; j < validations.length; j++) {
-                if (validations[j].index === i && validations[j].peerId === peerIdSource){
-                    trust += trust_for_new_resource;
-                }
-            }
-        }
 
-        // For each version the source peer has added, check if the target peer has validated it
-        if (versions[i].peerId === peerIdSource){
-            for (let j = 0; j < validations.length; j++) {
-                if (validations[j].index === i && validations[j].peerId === peerIdTarget){
-                    trust += trust_for_validating_resource;
+    // loop through all websites
+    for (let [url, versions] of websites) {
+        for (let [hash, versionInfo] of versions){
+
+            // if the source peer placed the version
+            if (versionInfo.peerId === peerIdSource){
+                // if the target peer validated the version
+                for(let i = 0; i < versionInfo.validations.length; i++){
+                    if (versionInfo.validations[i].peerId === peerIdTarget){
+                        trust += trust_for_validating_resource;
+                    }
                 }
             }
+
+            // if the source peer validated the version
+            if (versionInfo.peerId === peerIdTarget) {
+                for (let i = 0; i < versionInfo.validations.length; i++) {
+                    if (versionInfo.validations[i].peerId === peerIdSource) {
+                        trust += trust_for_new_resource;
+                    }
+                }
+
+            }
+
         }
     }
+
+        // For each version the target peer has added, check if the source peer has validated it
+
+
+        // For each version the source peer has added, check if the target peer has validated it
 
     //console.log("Peer " + peerIdSource + " has trust " + trust + " for peer " + peerIdTarget);
 
@@ -77,30 +91,21 @@ async function calculate_full_trust_of_user(aol, peerId){
 }
 
 
-async function calculate_trust_of_version(aol, hash){
-    let {versions, validations} = await aol.read();
+async function calculate_trust_of_version(aol, url, hash){
+    let websites = await aol.read();
 
-    // Figure out what index the hash is at
-    let index = -1;
-    for (let i = 0; i < versions.length; i++) {
-        if (versions[i].tree.value === hash){
-            index = i;
-            break;
-        }
-    }
 
-    if (index === -1){
-        console.log("couldn't find hash")
+    let websiteExistsInAOL = websites.has(url) && websites.get(url).has(hash);
+    if (!websiteExistsInAOL){
+        console.log("couldn't find either url or hash")
         return 0;
     }
 
-    let trust = await calculate_full_trust_of_user(aol, versions[index].peerId);
+    let trust = await calculate_full_trust_of_user(aol, websites.get(url).get(hash).peerId);
 
     // the trust of the version is the sum of the trust of the peers that validated it plus the peer who placed it there
-    for (let i = 0; i < validations.length; i++) {
-        if (validations[i].index === index){
-            trust += await calculate_full_trust_of_user(aol, validations[i].peerId);
-        }
+    for (let i = 0; i < websites.get(url).get(hash).validations.length; i++) {
+        trust += await calculate_full_trust_of_user(aol, websites.get(url).get(hash).validations[i].peerId);
     }
 
     return trust;
@@ -109,21 +114,17 @@ async function calculate_trust_of_version(aol, hash){
 
 let latestTrustMatrix;
 let latestVersionLength;
-let latestValidationLength;
 
 async function calculate_trust_matrix(aol){
-    let {versions, validations} = await aol.read();
+    let websites, logHistoryLength = await aol.readWithLogHistoryLength();
 
-    if (latestTrustMatrix !== undefined && latestVersionLength === versions.length && latestValidationLength === validations.length){
+    if (latestTrustMatrix !== undefined && latestVersionLength === logHistoryLength){
         return latestTrustMatrix;
     }
 
-    latestVersionLength = versions.length;
-    latestValidationLength = validations.length;
+    latestVersionLength = logHistoryLength;
 
     let uniquePeers = await get_unique_peers(aol);
-
-
 
     // Create 2d array of trust values between peers
     let trustMatrix = [];

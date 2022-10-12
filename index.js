@@ -1,6 +1,6 @@
 
 // Import and create the append only log
-import {AppendOnlyLog, messageType} from "./SimulatedAppendOnlyLog.js";
+import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
 import {convertPlaintextToHashTree} from "./TreeManager.js";
 import {JSDOM} from "jsdom";
 import {printTrustMatrix, printTrustOfEachPeer, calculate_trust_of_version} from "./TrustManager.js";
@@ -47,25 +47,28 @@ for (let i = purePeersToGenerate + consistenlyMaliciousPeersToGenerate; i < pure
 setTimeout(async () => {
     //console.log(await aol.read());
     // print versions and validations from log
-    let {validations, versions} = await aol.read();
-    console.log("Printing Versions")
-    console.log(versions)
-    console.log("Printing Validations")
-    console.log(validations)
+    //let {validations, versions} = await aol.read();
+    //console.log("Printing Versions")
+    //console.log(versions)
+    //console.log("Printing Validations")
+    //console.log(validations)
     // Printing Trust Matrix
+
+    await aol.printLogHistory()
+
     console.log("Printing Trust Matrix")
-    await aol.print();
+    //await aol.print();
     await printTrustMatrix(aol);
     // print trust of all users
     console.log("Printing Trust of all users")
     await printTrustOfEachPeer(aol);
 
-    console.log("trust of the different versions")
+    //console.log("trust of the different versions")
     // For each distinct version, call the calculate_trust_of_version function
-    let distinctVersions = [...new Set(versions.map(item => item.tree.value))];
-    for (let i = 0; i < distinctVersions.length; i++) {
-        console.log("version " + distinctVersions[i] + " has trust " + await calculate_trust_of_version(aol, distinctVersions[i]))
-    }
+    //let distinctVersions = [...new Set(versions.map(item => item.tree.value))];
+    //for (let i = 0; i < distinctVersions.length; i++) {
+    //    console.log("version " + distinctVersions[i] + " has trust " + await calculate_trust_of_version(aol, distinctVersions[i]))
+    //}
 
 
 }, 6000);

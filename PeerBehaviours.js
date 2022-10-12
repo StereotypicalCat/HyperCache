@@ -25,6 +25,17 @@ function delay(time) {
     return new Promise(resolve => setTimeout(resolve, time));
 }
 
+
+let doP2PProtocol = async (document, url, aol, peerNum) => {
+    let hashTree = await convertPlaintextToHashTree(document);
+
+    let wasSuccess = await aol.tryAddNewVersion(hashTree, peerNum, url)
+
+    if (!wasSuccess){
+        await aol.tryAddNewValidation(hashTree, peerNum, url)
+    }
+}
+
 let startPurePeer = async (peerNum, aol) => {
 
     await delay(Math.random() * 2000)
@@ -33,39 +44,13 @@ let startPurePeer = async (peerNum, aol) => {
     console.log("Pure Peer " + peerNum + " started");
 
 
-    let doc;
-    let hashTree;
 
     for (let i = 0; i < websites.length; i++) {
-        doc = websites[i];
+        let doc = websites[i];
 
-        hashTree = await convertPlaintextToHashTree(doc);
+        await doP2PProtocol(doc, testUrls[i], aol, peerNum)
 
-        let {wasSuccess, index} = await aol.tryAddNewVersion(hashTree, peerNum)
-
-        if (!wasSuccess){
-            await aol.tryAddNewValidation(index, peerNum)
-        }
     }
-
-    /*    if (Math.random() >= 0.5){
-            // First crawl a website and create structure 1
-            doc = await crawlWebsite('debug1');
-            hashTree = await convertPlaintextToHashTree(doc)
-            //console.log("Printing Tree")
-            //console.log(hashTree)
-            //console.log("Calling Print")
-            //hashTree.print();
-        }
-        else {
-            doc = await crawlWebsite('debug2');
-            hashTree = await convertPlaintextToHashTree(doc)
-
-            //console.log("Printing Tree")
-            //console.log(hashTree2)
-            //console.log("Calling Print")
-            //hashTree2.print();
-        }*/
 }
 
 let startConsistenlyMaliciousPeer = async (peerNum, aol) => {
@@ -75,19 +60,12 @@ let startConsistenlyMaliciousPeer = async (peerNum, aol) => {
         // print the second mark when the peer starts
         console.log("Consistently Malicious Peer " + peerNum + " started");
 
-    let doc;
-    let hashTree;
+
 
     for (let i = 0; i < websites.length; i++) {
-        doc = maliciouswebsites[i];
+        let doc = maliciouswebsites[i];
 
-        hashTree = await convertPlaintextToHashTree(doc);
-
-        let {wasSuccess, index} = await aol.tryAddNewVersion(hashTree, peerNum)
-
-        if (!wasSuccess){
-            await aol.tryAddNewValidation(index, peerNum)
-        }
+        await doP2PProtocol(doc, testUrls[i], aol, peerNum)
     }
 
 
@@ -98,7 +76,7 @@ let startSometimesMaliciousPeer = async (peerNum, aol) => {
     await delay(Math.random() * 2000)
 
     // print the second mark when the peer starts
-    console.log("Consistently Malicious Peer " + peerNum + " started");
+    console.log("Soemitimes Malicious Peer " + peerNum + " started");
 
     let doc;
     let hashTree;
@@ -111,13 +89,7 @@ let startSometimesMaliciousPeer = async (peerNum, aol) => {
             doc = websites[i];
         }
 
-        hashTree = await convertPlaintextToHashTree(doc);
-
-        let {wasSuccess, index} = await aol.tryAddNewVersion(hashTree, peerNum)
-
-        if (!wasSuccess){
-            await aol.tryAddNewValidation(index, peerNum)
-        }
+        await doP2PProtocol(doc, testUrls[i], aol, peerNum)
     }
 }
 
