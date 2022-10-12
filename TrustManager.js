@@ -1,6 +1,9 @@
 
-const trust_for_new_resource = 20;
-const trust_for_validating_resource = 5;
+const trust_for_new_resource = 4;
+const trust_for_validating_resource = 1;
+const popolous_multiplier = 1.05;
+
+
 
 async function get_unique_peers(aol){
 
@@ -103,10 +106,17 @@ async function calculate_trust_of_version(aol, url, hash){
 
     let trust = await calculate_full_trust_of_user(aol, websites.get(url).get(hash).peerId);
 
+    // Bonus works to restrict karma whoring
+    let bonus = popolous_multiplier;
     // the trust of the version is the sum of the trust of the peers that validated it plus the peer who placed it there
     for (let i = 0; i < websites.get(url).get(hash).validations.length; i++) {
-        trust += await calculate_full_trust_of_user(aol, websites.get(url).get(hash).validations[i].peerId);
+        let user_trust = await calculate_full_trust_of_user(aol, websites.get(url).get(hash).validations[i].peerId);
+        trust += user_trust;
+        bonus *= popolous_multiplier;
     }
+    trust *= bonus;
+
+
 
     return trust;
 

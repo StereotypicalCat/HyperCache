@@ -36,6 +36,19 @@ let doP2PProtocol = async (document, url, aol, peerNum) => {
     }
 }
 
+let doP2PProtocolWithPlaintext = async (plaintext, url, aol, peerNum) => {
+
+    let hashTree = {
+        value: plaintext
+    }
+
+    let wasSuccess = await aol.tryAddNewVersion(hashTree, peerNum, url)
+
+    if (!wasSuccess){
+        await aol.tryAddNewValidation(hashTree, peerNum, url)
+    }
+}
+
 let startPurePeer = async (peerNum, aol) => {
 
     await delay(Math.random() * 2000)
@@ -48,7 +61,7 @@ let startPurePeer = async (peerNum, aol) => {
     for (let i = 0; i < websites.length; i++) {
         let doc = websites[i];
 
-        await doP2PProtocol(doc, testUrls[i], aol, peerNum)
+        await doP2PProtocolWithPlaintext(doc, testUrls[i], aol, peerNum)
 
     }
 }
@@ -65,7 +78,7 @@ let startConsistenlyMaliciousPeer = async (peerNum, aol) => {
     for (let i = 0; i < websites.length; i++) {
         let doc = maliciouswebsites[i];
 
-        await doP2PProtocol(doc, testUrls[i], aol, peerNum)
+        await doP2PProtocolWithPlaintext(doc, testUrls[i], aol, peerNum)
     }
 
 
@@ -89,8 +102,11 @@ let startSometimesMaliciousPeer = async (peerNum, aol) => {
             doc = websites[i];
         }
 
-        await doP2PProtocol(doc, testUrls[i], aol, peerNum)
+        await doP2PProtocolWithPlaintext(doc, testUrls[i], aol, peerNum)
     }
 }
+
+
+
 
 export {startPurePeer, startConsistenlyMaliciousPeer, startSometimesMaliciousPeer}

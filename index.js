@@ -63,12 +63,17 @@ setTimeout(async () => {
     console.log("Printing Trust of all users")
     await printTrustOfEachPeer(aol);
 
-    //console.log("trust of the different versions")
-    // For each distinct version, call the calculate_trust_of_version function
-    //let distinctVersions = [...new Set(versions.map(item => item.tree.value))];
-    //for (let i = 0; i < distinctVersions.length; i++) {
-    //    console.log("version " + distinctVersions[i] + " has trust " + await calculate_trust_of_version(aol, distinctVersions[i]))
-    //}
+    console.log("trust of the different versions")
+
+    let websites = await aol.read()
+    // for each url in the websites, print each hash and the trust of that hash
+    for (const [url, hashes] of websites){
+        console.log("==== " + url + " ====")
+        for (const [hash, hashinfo] of hashes) {
+            let trust = await calculate_trust_of_version(aol, url, hash)
+            console.log(" hash: " + hash + " trust: " + trust)
+        }
+    }
 
 
 }, 6000);
