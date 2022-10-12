@@ -1,5 +1,7 @@
 import {convertPlaintextToHashTree} from "./TreeManager.js";
+import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
 
+/*
 let testUrls = [
     'testUrl1',
     'testUrl2',
@@ -20,6 +22,9 @@ let maliciouswebsites = [
     '<!DOCTYPE html><html><body><p>What did alice say to me? bob violently asked</p></body></html>',
     '<!DOCTYPE html><html><body><p>Alice says you look absolutely terrible</p></body></html>'
 ]
+*/
+
+const amountOfWebsites = 100;
 
 function delay(time) {
     return new Promise(resolve => setTimeout(resolve, time));
@@ -58,10 +63,10 @@ let startPurePeer = async (peerNum, aol) => {
 
 
 
-    for (let i = 0; i < websites.length; i++) {
-        let doc = websites[i];
+    for (let i = 0; i < amountOfWebsites; i++) {
+        let doc = "correctHash" + i;
 
-        await doP2PProtocolWithPlaintext(doc, testUrls[i], aol, peerNum)
+        await doP2PProtocolWithPlaintext(doc, "url" + i, aol, peerNum)
 
     }
 }
@@ -75,10 +80,10 @@ let startConsistenlyMaliciousPeer = async (peerNum, aol) => {
 
 
 
-    for (let i = 0; i < websites.length; i++) {
-        let doc = maliciouswebsites[i];
+    for (let i = 0; i < amountOfWebsites; i++) {
+        let doc = "wrongHash" + i;;
 
-        await doP2PProtocolWithPlaintext(doc, testUrls[i], aol, peerNum)
+        await doP2PProtocolWithPlaintext(doc, "url" + i, aol, peerNum)
     }
 
 
@@ -89,24 +94,39 @@ let startSometimesMaliciousPeer = async (peerNum, aol) => {
     await delay(Math.random() * 2000)
 
     // print the second mark when the peer starts
-    console.log("Soemitimes Malicious Peer " + peerNum + " started");
+    console.log("Sometimes Malicious Peer " + peerNum + " started");
 
     let doc;
     let hashTree;
 
-    for (let i = 0; i < websites.length; i++) {
+    for (let i = 0; i < amountOfWebsites; i++) {
         if (Math.random() >= 0.5){
-            doc = maliciouswebsites[i];
+            doc = "wrongHash" + i;
         }
         else{
-            doc = websites[i];
+            doc = "correctHash" + i;
         }
 
-        await doP2PProtocolWithPlaintext(doc, testUrls[i], aol, peerNum)
+        await doP2PProtocolWithPlaintext(doc, "url" + i, aol, peerNum)
     }
+}
+
+let startNetworkWithConfig = async (purePeers, ConsistentMalicious, SometimesMalicious) => {
+    const aol = new AppendOnlyLog(purePeers + ConsistentMalicious + SometimesMalicious);
+
+    for (let i = 0; i < purePeers; i++) {
+        startPurePeer(i, aol)
+    }
+    for (let i = purePeers; i < purePeers + ConsistentMalicious; i++) {
+        startConsistenlyMaliciousPeer(i, aol)
+    }
+    for (let i = purePeers + ConsistentMalicious; i < purePeers + ConsistentMalicious + SometimesMalicious; i++) {
+        startSometimesMaliciousPeer(i, aol)
+    }
+
+    return aol;
 }
 
 
 
-
-export {startPurePeer, startConsistenlyMaliciousPeer, startSometimesMaliciousPeer}
+export {startPurePeer, startConsistenlyMaliciousPeer, startSometimesMaliciousPeer, startNetworkWithConfig}

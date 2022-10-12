@@ -1,15 +1,17 @@
-
 const trust_for_new_resource = 4;
 const trust_for_validating_resource = 1;
 const popolous_multiplier = 1.05;
 
 
-
+// Needs to be rewritten and refactored to work with key-like ids instead of numbers
 async function get_unique_peers(aol){
 
     //return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     // return list with numers 0 to 5
-    return Array.from(Array(14).keys());
+
+    const numberOfPeers = await aol.getNumberOfPeers();
+
+    return Array.from(Array(numberOfPeers).keys());
 
 
     // uncomment if switching from linear peer ids to
@@ -93,7 +95,6 @@ async function calculate_full_trust_of_user(aol, peerId){
     return userTrust;
 }
 
-
 async function calculate_trust_of_version(aol, url, hash){
     let websites = await aol.read();
 
@@ -114,6 +115,7 @@ async function calculate_trust_of_version(aol, url, hash){
         trust += user_trust;
         bonus *= popolous_multiplier;
     }
+
     trust *= bonus;
 
 
@@ -126,9 +128,10 @@ let latestTrustMatrix;
 let latestVersionLength;
 
 async function calculate_trust_matrix(aol){
-    let websites, logHistoryLength = await aol.readWithLogHistoryLength();
+    let {websites, logHistoryLength} = await aol.readWithLogHistoryLength();
 
     if (latestTrustMatrix !== undefined && latestVersionLength === logHistoryLength){
+        //console.log("reusing trust matrix.")
         return latestTrustMatrix;
     }
 

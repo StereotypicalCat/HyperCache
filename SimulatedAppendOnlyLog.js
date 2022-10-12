@@ -2,10 +2,22 @@ import {Mutex} from "async-mutex";
 
 class AppendOnlyLog{
 
-    constructor(){
+    // NumberOfPeers only used for simulation.
+    constructor(numberOfPeers){
+        this.numberOfPeers = numberOfPeers;
         this.websites = new Map();
         this.logHistory = [];
         this.lock = new Mutex();
+    }
+
+    async getNumberOfPeers(){
+        const release = await this.lock.acquire();
+        try {
+            return this.numberOfPeers;
+        }
+        finally {
+            release();
+        }
     }
 
     async getLogLength(){
