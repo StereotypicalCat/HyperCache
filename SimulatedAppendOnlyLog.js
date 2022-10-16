@@ -1,4 +1,5 @@
 import {Mutex} from "async-mutex";
+import {getTime} from "./TimeManager.js";
 
 class AppendOnlyLog{
 
@@ -52,6 +53,7 @@ class AppendOnlyLog{
                     tree: tree,
                     peerId: peerId,
                     signature: null,
+                    time: getTime(),
                     validations: []
                 })
 
@@ -83,6 +85,7 @@ class AppendOnlyLog{
 
             this.websites.get(url).get(toplevelhash).validations.push({
                 peerId: peerId,
+                time: getTime(),
                 signature: null
             })
             this.logHistory.push(peerId + " validated version " + toplevelhash + " for url " + url)

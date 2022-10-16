@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {getBestAndWorstTrustRatios} from "./TestHelpers.js";
+import {max_request_time, max_time, min_request_time} from "./SimulationParameters.js";
+import {getTime} from "./TimeManager.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,13 +39,6 @@ function readFilesSync(dir) {
     return files;
 }
 
-
-
-let startTime = -1;
-let minDelay = 1;
-let maxDelay = 2;
-
-
 function waitforme(milisec) {
     return new Promise(resolve => {
         setTimeout(() => { resolve('') }, milisec);
@@ -51,19 +46,16 @@ function waitforme(milisec) {
 }
 
 let getWebsiteFaked = async (url) => {
-    let webFiles = await initWebsiteFaked();
+    let webFiles = await GetWebsiteFakedPlaintext();
 
-    if (startTime === -1){
-        startTime = new Date().getTime() / 1000;
-    }
 
-    const randomDelay = 1000 * (Math.random() * (maxDelay - minDelay) + minDelay)
+    const randomDelay = 1000 * (Math.random() * (max_request_time - min_request_time) + min_request_time)
 
     await waitforme(randomDelay);
 
-    let currentTime = (new Date().getTime() / 1000) - startTime;
+    let currentTime = getTime();
 
-    console.log(currentTime)
+    //console.log(currentTime)
 
     // Find a website with a timestamp earlier than the current time yet closest to the current time
     let website = webFiles.get(url);
@@ -79,8 +71,7 @@ let getWebsiteFaked = async (url) => {
     return closestWebsite;
 }
 
-
-let initWebsiteFaked = async () => {
+let initWebsiteFakedActualWebsites = async () => {
 
     let webFiles = new Map();
 
@@ -100,8 +91,56 @@ let initWebsiteFaked = async () => {
     });
 
     return webFiles;
-
 }
+
+let initWebsiteFakedRandomGeneratedWebsite = async () => {
+    // TODO: IMPLEMENT
+    throw err;
+}
+
+let fakedPlaintextWebsites = null;
+let GetWebsiteFakedPlaintext = async () => {
+
+    if (fakedPlaintextWebsites !== null){
+        //console.log("Using cached faked websites");
+        return fakedPlaintextWebsites;
+    }
+
+    let webFiles = new Map();
+
+    for(let i = 0; i < 3; i++){
+        let url = "url" + i;
+        let data = "correctHash" + i;
+
+        // Generate between 1 and 10 versions for each hash
+
+        let versions = Math.floor(Math.random() * 10) + 1;
+        let timestamps = [];
+
+        // Generate random timestamps
+        for(let j = 0; j < versions; j++){
+            timestamps.push(Math.floor(Math.random() * max_time))
+        }
+        timestamps = [...new Set(timestamps)];
+
+        timestamps.sort((a, b) => a - b)
+
+        // Generate corresponding version and put it into website
+
+        let websites = []
+        for(let j = 0; j < timestamps.length; j++){
+            let versionData = data + "_version" + j;
+            websites.push({timeStart: timestamps[j], data: versionData});
+        }
+
+
+        webFiles.set(url, websites);
+    }
+
+    fakedPlaintextWebsites = webFiles;
+    return webFiles;
+}
+
 
 let localMode = true;
 
@@ -119,6 +158,20 @@ let getWebsiteLive = async (url) => {
         xmlHttp.send(null);*/
 }
 
+
+let get_requestable_urls = async () => {
+    if (localMode == false){
+        // some shit here TODO: Fill out
+    }
+    else{
+        let sites = await GetWebsiteFakedPlaintext();
+
+        let val =  Array.from( sites.keys() );
+
+        return val;
+    }
+}
+
 let request_website = async (url) => {
     if (localMode == false){
         let val = await getWebsiteLive(url)
@@ -128,19 +181,23 @@ let request_website = async (url) => {
         let val = await getWebsiteFaked(url);
         return val;
     }
-
 }
 
+
+/*
 let test = async () => {
     setTimeout(async () => {
-        let res = await request_website('site1');
+    let res = await request_website('site1');
         console.log(res);
         await test();
     }, 800)
 }
+*/
 
-await test();
+//await test();
 
+
+export {request_website, get_requestable_urls, GetWebsiteFakedPlaintext}
 
 
 //let test = await request_website("https://www.google.com")

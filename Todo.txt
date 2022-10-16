@@ -1,0 +1,3 @@
+// This file is meant to represent what needs to be done in the next dev iteration.
+
+TODO: focus on creating a timemap in the trust manager displaying which interval the network is confident a specific version existed in.

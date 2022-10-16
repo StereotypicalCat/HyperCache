@@ -1,5 +1,6 @@
 import {convertPlaintextToHashTree} from "./TreeManager.js";
 import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
+import {max_peer_time_before_first_request} from "./SimulationParameters.js";
 
 /*
 let testUrls = [
@@ -23,6 +24,11 @@ let maliciouswebsites = [
     '<!DOCTYPE html><html><body><p>Alice says you look absolutely terrible</p></body></html>'
 ]
 */
+// https://javascript.info/task/shuffle
+function shuffle(array) {
+    array.sort(() => Math.random() - 0.5);
+}
+
 
 const amountOfWebsites = 100;
 
@@ -54,24 +60,34 @@ let doP2PProtocolWithPlaintext = async (plaintext, url, aol, peerNum) => {
     }
 }
 
-let startPurePeer = async (peerNum, aol) => {
+let startPurePeer = async (peerNum, aol, urls, requester) => {
 
-    await delay(Math.random() * 2000)
+    const delayToWait = Math.random() * max_peer_time_before_first_request * 1000;
 
-    // print the second mark when the peer starts
-    console.log("Pure Peer " + peerNum + " started");
+    const thisPeersUrls = [...urls]
+    shuffle(thisPeersUrls)
 
+    let mainLoop = async () => {
+        // print the second mark when the peer starts
+        //console.log("Pure Peer " + peerNum + " starting again");
 
+        for (const url of thisPeersUrls){
+            //console.log("Peer " + peerNum + " requesting " + url);
+            //console.log("new url: " + url)
+            let response = await requester(url);
 
-    for (let i = 0; i < amountOfWebsites; i++) {
-        let doc = "correctHash" + i;
+            await doP2PProtocolWithPlaintext(response, url, aol, peerNum)
 
-        await doP2PProtocolWithPlaintext(doc, "url" + i, aol, peerNum)
+        }
+
+        setTimeout(mainLoop, delayToWait);
 
     }
+
+    setTimeout(mainLoop, delayToWait)
 }
 
-let startConsistenlyMaliciousPeer = async (peerNum, aol) => {
+let startConsistenlyMaliciousPeer = async (peerNum, aol, urls, requester) => {
 
         await delay(Math.random() * 2000)
 
@@ -89,7 +105,7 @@ let startConsistenlyMaliciousPeer = async (peerNum, aol) => {
 
 }
 
-let startSometimesMaliciousPeer = async (peerNum, aol) => {
+let startSometimesMaliciousPeer = async (peerNum, aol, urls, requester) => {
 
     await delay(Math.random() * 2000)
 
@@ -111,17 +127,17 @@ let startSometimesMaliciousPeer = async (peerNum, aol) => {
     }
 }
 
-let startNetworkWithConfig = async (purePeers, ConsistentMalicious, SometimesMalicious) => {
+let startNetworkWithConfig = async (purePeers, ConsistentMalicious, SometimesMalicious, urlsToRequest, requestMethod) => {
     const aol = new AppendOnlyLog(purePeers + ConsistentMalicious + SometimesMalicious);
 
     for (let i = 0; i < purePeers; i++) {
-        startPurePeer(i, aol)
+        startPurePeer(i, aol, urlsToRequest, requestMethod);
     }
     for (let i = purePeers; i < purePeers + ConsistentMalicious; i++) {
-        startConsistenlyMaliciousPeer(i, aol)
+        startConsistenlyMaliciousPeer(i, aol, urlsToRequest, requestMethod)
     }
     for (let i = purePeers + ConsistentMalicious; i < purePeers + ConsistentMalicious + SometimesMalicious; i++) {
-        startSometimesMaliciousPeer(i, aol)
+        startSometimesMaliciousPeer(i, aol, urlsToRequest, requestMethod)
     }
 
     return aol;
