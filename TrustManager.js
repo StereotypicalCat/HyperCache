@@ -128,7 +128,7 @@ let latestTrustMatrix;
 let latestVersionLength;
 
 async function calculate_trust_matrix(aol){
-    let {websites, logHistoryLength} = await aol.readWithLogHistoryLength();
+    let logHistoryLength = await aol.getLogLength();
 
     if (latestTrustMatrix !== undefined && latestVersionLength === logHistoryLength){
         //console.log("reusing trust matrix.")
