@@ -45,15 +45,23 @@ function waitforme(milisec) {
     })
 }
 
-let getWebsiteFaked = async (url) => {
+let getWebsiteFaked = async (url, withDelay = true, specificSlot = -1) => {
     let webFiles = await GetWebsiteFakedPlaintext();
 
 
-    const randomDelay = 1000 * (Math.random() * (max_request_time - min_request_time) + min_request_time)
 
-    await waitforme(randomDelay);
+    if (withDelay){
+        const randomDelay = 1000 * (Math.random() * (max_request_time - min_request_time) + min_request_time)
 
-    let currentTime = getTime();
+        await waitforme(randomDelay);
+    }
+    let currentTime;
+    if(specificSlot === -1){
+        currentTime = getTime();
+    }
+    else{
+        currentTime = specificSlot;
+    }
 
     //console.log(currentTime)
 
@@ -197,7 +205,7 @@ let test = async () => {
 //await test();
 
 
-export {request_website, get_requestable_urls, GetWebsiteFakedPlaintext}
+export {request_website, get_requestable_urls, GetWebsiteFakedPlaintext, getWebsiteFaked}
 
 
 //let test = await request_website("https://www.google.com")

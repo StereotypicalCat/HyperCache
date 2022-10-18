@@ -5,7 +5,7 @@ import {
     printTrustMatrix,
     printTrustOfEachPeer
 } from "./TrustManager.js";
-import {GetWebsiteFakedPlaintext} from "./WebsiteManager.js";
+import {getWebsiteFaked, GetWebsiteFakedPlaintext} from "./WebsiteManager.js";
 import {getTime} from "./TimeManager.js";
 import util from 'util';
 
@@ -120,8 +120,6 @@ let calculateConfusionMatrix = async (aol) => {
         // Check if the url is in the correct list of websites
         if (correctWebsites.has(url)){
 
-
-
             // Check if the url is trusted
             if (await calculate_trust_of_version(aol, url, hashes.get("correctHash")) > tempMinRatio){
                 // The url is trusted, so it is a true positive
@@ -139,8 +137,33 @@ let calculateConfusionMatrix = async (aol) => {
 
 }
 
-let calculateTemporalIncorrectness = async (aol) => {
+export let calculateTemporalIncorrectness = async (aol, relaxed = false) => {
     // calculates the distance between the timelines of websites and the timeline on the aol
+/*    let websites = await aol.read()
+    let endTime = getTime();
+    let correctSlots = 0;
+
+    for (const [url, hashes] of websites){
+
+        //console.log("==== " + url + " ====")
+        let timeline = await calculate_approximate_timeline_of_url(aol, url, endTime, true)
+        for (let slot = 0; slot < timeline.length; slot++){
+            let correctVersion = getWebsiteFaked(url, false, slot)
+            for (let i = 0; i < timeline[slot].versions.lengtht; i++){
+                if(timeline[slot].versions[i].hash === correctVersion){
+                    correctSlots++;
+                }
+            }
+
+        }
+    }
+
+    let totalSlots = endTime * websites.length;
+
+    console.log("Correct: ", correctSlots)
+    console.log("Total: ", totalSlots)
+
+    return correctSlots / totalSlots;*/
 
 }
 

@@ -6,7 +6,12 @@
 import pkg from 'uuid';
 import {startNetworkWithConfig} from "./PeerBehaviours.js";
 import {calculate_trust_of_version, printTrustMatrix, printTrustOfEachPeer} from "./TrustManager.js";
-import {getBestAndWorstTrustRatios, printUsefulStats, printWebsiteTimelines} from "./TestHelpers.js";
+import {
+    calculateTemporalIncorrectness,
+    getBestAndWorstTrustRatios,
+    printUsefulStats,
+    printWebsiteTimelines
+} from "./TestHelpers.js";
 import {get_requestable_urls, GetWebsiteFakedPlaintext, request_website} from "./WebsiteManager.js";
 import {max_time} from "./SimulationParameters.js";
 const { v4: uuidv4 } = pkg;
@@ -26,11 +31,13 @@ setTimeout(async () => {
     //console.log(worstratio)
 
     //await printUsefulStats(aol);
-    await printWebsiteTimelines(aol, true);
+    //await printWebsiteTimelines(aol, true);
 
+    //let val = await GetWebsiteFakedPlaintext();
+    //console.log(val)
 
-    let val = await GetWebsiteFakedPlaintext();
-    console.log(val)
+    let ratio = await calculateTemporalIncorrectness(aol)
+    console.log(ratio)
 
 }, (max_time*1000) + 2 * 1000);
 
