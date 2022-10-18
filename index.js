@@ -6,7 +6,7 @@
 import pkg from 'uuid';
 import {startNetworkWithConfig} from "./PeerBehaviours.js";
 import {calculate_trust_of_version, printTrustMatrix, printTrustOfEachPeer} from "./TrustManager.js";
-import {getBestAndWorstTrustRatios, printUsefulStats} from "./TestHelpers.js";
+import {getBestAndWorstTrustRatios, printUsefulStats, printWebsiteTimelines} from "./TestHelpers.js";
 import {get_requestable_urls, GetWebsiteFakedPlaintext, request_website} from "./WebsiteManager.js";
 import {max_time} from "./SimulationParameters.js";
 const { v4: uuidv4 } = pkg;
@@ -25,7 +25,9 @@ setTimeout(async () => {
     //console.log(bestratio)
     //console.log(worstratio)
 
-    await printUsefulStats(aol);
+    //await printUsefulStats(aol);
+    await printWebsiteTimelines(aol);
+
 
     let val = await GetWebsiteFakedPlaintext();
     console.log(val)
@@ -33,5 +35,5 @@ setTimeout(async () => {
 }, (max_time*1000) + 2 * 1000);
 
 setTimeout(async () => {
-    console.log("Half the time has passed....");
+    console.log("About half the time has passed....");
 }, (max_time*1000) / 2);

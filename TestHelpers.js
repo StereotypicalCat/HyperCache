@@ -1,5 +1,12 @@
-import {calculate_trust_of_version, printTrustMatrix, printTrustOfEachPeer} from "./TrustManager.js";
+import {
+    calculate_approximate_timeline_of_url,
+    calculate_trust_of_version,
+    calculate_trust_of_version_at_time,
+    printTrustMatrix,
+    printTrustOfEachPeer
+} from "./TrustManager.js";
 import {GetWebsiteFakedPlaintext} from "./WebsiteManager.js";
+import {getTime} from "./TimeManager.js";
 
 let getBestAndWorstTrustRatios = async (aol) => {
     console.log("Calculating different trust ratios")
@@ -70,6 +77,19 @@ let printUsefulStats = async (aol) => {
             let trust = await calculate_trust_of_version(aol, url, hash)
             console.log(" hash: " + hash + " trust: " + trust)
         }
+    }
+}
+
+export let printWebsiteTimelines = async (aol) => {
+
+    let websites = await aol.read()
+    let endTime = getTime();
+    for (const [url, hashes] of websites){
+
+        console.log("==== " + url + " ====")
+        let timeline = await calculate_approximate_timeline_of_url(aol, url, endTime)
+        console.log(timeline)
+
     }
 }
 

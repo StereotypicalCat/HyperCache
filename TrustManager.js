@@ -118,9 +118,80 @@ async function calculate_trust_of_version(aol, url, hash){
 
     trust *= bonus;
 
+    return trust;
 
+}
+
+function inverseLogsticFunction(x){
+    return 1 -(1/(1+Math.exp(-x)));
+}
+
+async function calculate_trust_of_version_at_time(aol, url, hash, slot){
+    let websites = await aol.read();
+
+    let websiteExistsInAOL = websites.has(url) && websites.get(url).has(hash);
+    if (!websiteExistsInAOL){
+        console.log("couldn't find either url or hash")
+        return 0;
+    }
+
+    let trust = await calculate_full_trust_of_user(aol, websites.get(url).get(hash).peerId);
+    let timeSinceInitialSubmission = Math.abs(slot - websites.get(url).get(hash).time);
+    let initialUserScaleValue = inverseLogsticFunction(timeSinceInitialSubmission)
+    trust *= initialUserScaleValue;
+
+
+    // Bonus works to restrict karma whoring
+    let bonus = popolous_multiplier;
+    // the trust of the version is the sum of the trust of the peers that validated it plus the peer who placed it there
+    for (let i = 0; i < websites.get(url).get(hash).validations.length; i++) {
+        let user_trust = await calculate_full_trust_of_user(aol, websites.get(url).get(hash).validations[i].peerId);
+
+        // Scale the trust accumulated with the time since the validation
+        let timeSinceValidation = Math.abs(slot - websites.get(url).get(hash).validations[i].time);
+        let scaleValue = inverseLogsticFunction(timeSinceValidation)
+        //console.log("Scale value: ", scaleValue, "Time since validation:", timeSinceValidation)
+
+        trust += user_trust * scaleValue;
+        bonus *= popolous_multiplier;
+    }
+
+    trust *= bonus;
 
     return trust;
+
+}
+
+export async function calculate_approximate_timeline_of_url(aol, url, endOfTimelineSlot){
+    let websites = await aol.read()
+
+    let calculatedTimeline = []
+    for (let time = 0; time < endOfTimelineSlot; time++){
+
+        let hashes = websites.get(url)
+
+        let mostTrustedVersionScore = -1;
+        let mostTrustedVersionHash = "";
+        for (const [hash, hashinfo] of hashes) {
+            let trust = await calculate_trust_of_version_at_time(aol, url, hash, time)
+            //console.log(" hash: " + hash + " trust: " + trust)
+            if (trust > mostTrustedVersionScore){
+                mostTrustedVersionScore = trust;
+                mostTrustedVersionHash = hash;
+            }
+        }
+
+        ///console.log("Most trusted version at time " + time + " is " + mostTrustedVersionHash + " with score " + mostTrustedVersionScore)
+
+        //console.log("CalculatedTimeline: ", calculatedTimeline)
+        if (calculatedTimeline.length === 0 || calculatedTimeline[calculatedTimeline.length - 1].hash !== mostTrustedVersionHash){
+            calculatedTimeline.push({timeStart: time, hash: mostTrustedVersionHash})
+        }
+    }
+
+    return calculatedTimeline;
+    //console.log(calculatedTimeline)
+
 
 }
 
@@ -167,4 +238,4 @@ async function printTrustOfEachPeer(aol){
     }
 }
 
-export {calculate_user_trust_of_user, printTrustMatrix, printTrustOfEachPeer, calculate_trust_of_version}
+export {calculate_user_trust_of_user, printTrustMatrix, printTrustOfEachPeer, calculate_trust_of_version, calculate_trust_of_version_at_time}
