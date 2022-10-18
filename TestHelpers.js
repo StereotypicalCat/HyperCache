@@ -80,16 +80,15 @@ let printUsefulStats = async (aol) => {
     }
 }
 
-export let printWebsiteTimelines = async (aol) => {
+export let printWebsiteTimelines = async (aol, withConfidence = false) => {
 
     let websites = await aol.read()
     let endTime = getTime();
     for (const [url, hashes] of websites){
 
         console.log("==== " + url + " ====")
-        let timeline = await calculate_approximate_timeline_of_url(aol, url, endTime)
+        let timeline = await calculate_approximate_timeline_of_url(aol, url, endTime, withConfidence)
         console.log(timeline)
-
     }
 }
 

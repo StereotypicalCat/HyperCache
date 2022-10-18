@@ -162,7 +162,7 @@ async function calculate_trust_of_version_at_time(aol, url, hash, slot){
 
 }
 
-export async function calculate_approximate_timeline_of_url(aol, url, endOfTimelineSlot){
+export async function calculate_approximate_timeline_of_url(aol, url, endOfTimelineSlot, withConfidence = false){
     let websites = await aol.read()
 
     let calculatedTimeline = []
@@ -172,9 +172,14 @@ export async function calculate_approximate_timeline_of_url(aol, url, endOfTimel
 
         let mostTrustedVersionScore = -1;
         let mostTrustedVersionHash = "";
+        let totalTrustOfAllVersions = 0;
+        let totalVersions = 0;
+
         for (const [hash, hashinfo] of hashes) {
             let trust = await calculate_trust_of_version_at_time(aol, url, hash, time)
             //console.log(" hash: " + hash + " trust: " + trust)
+            totalTrustOfAllVersions += trust;
+            totalVersions += 1;
             if (trust > mostTrustedVersionScore){
                 mostTrustedVersionScore = trust;
                 mostTrustedVersionHash = hash;
@@ -184,9 +189,15 @@ export async function calculate_approximate_timeline_of_url(aol, url, endOfTimel
         ///console.log("Most trusted version at time " + time + " is " + mostTrustedVersionHash + " with score " + mostTrustedVersionScore)
 
         //console.log("CalculatedTimeline: ", calculatedTimeline)
-        if (calculatedTimeline.length === 0 || calculatedTimeline[calculatedTimeline.length - 1].hash !== mostTrustedVersionHash){
+        if (withConfidence === false && (calculatedTimeline.length === 0 || calculatedTimeline[calculatedTimeline.length - 1].hash !== mostTrustedVersionHash)){
             calculatedTimeline.push({timeStart: time, hash: mostTrustedVersionHash})
         }
+        else if (withConfidence === true){
+            let confidence = mostTrustedVersionScore / totalTrustOfAllVersions;
+            calculatedTimeline.push({timeStart: time, hash: mostTrustedVersionHash, confidence: confidence, versions: totalVersions})
+        }
+
+
     }
 
     return calculatedTimeline;

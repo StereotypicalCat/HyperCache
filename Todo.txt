@@ -1,5 +1,8 @@
 // This file is meant to represent what needs to be done in the next dev iteration.
 
-TODO: create confidence score for timeline of websites.
+TODO: allow multiple versions of a website to be confident in a given interval.
 TODO: create test functions to automate collecting data.
 TODO: Fix bad actors so they work too.
+TODO: Change getTime to use variable slot length.
+
+BIG TODO: PSI versions of hashes.

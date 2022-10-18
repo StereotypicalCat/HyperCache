@@ -26,7 +26,7 @@ setTimeout(async () => {
     //console.log(worstratio)
 
     //await printUsefulStats(aol);
-    await printWebsiteTimelines(aol);
+    await printWebsiteTimelines(aol, true);
 
 
     let val = await GetWebsiteFakedPlaintext();
