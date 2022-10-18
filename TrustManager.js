@@ -1,3 +1,5 @@
+import {minimum_confidence, only_most_trusted} from "./SimulationParameters.js";
+
 const trust_for_new_resource = 4;
 const trust_for_validating_resource = 1;
 const popolous_multiplier = 1.05;
@@ -188,15 +190,27 @@ export async function calculate_approximate_timeline_of_url(aol, url, endOfTimel
 
         ///console.log("Most trusted version at time " + time + " is " + mostTrustedVersionHash + " with score " + mostTrustedVersionScore)
 
-        //console.log("CalculatedTimeline: ", calculatedTimeline)
-        if (withConfidence === false && (calculatedTimeline.length === 0 || calculatedTimeline[calculatedTimeline.length - 1].hash !== mostTrustedVersionHash)){
-            calculatedTimeline.push({timeStart: time, hash: mostTrustedVersionHash})
+        if (only_most_trusted){
+            //console.log("CalculatedTimeline: ", calculatedTimeline)
+            if (withConfidence === false && (calculatedTimeline.length === 0 || calculatedTimeline[calculatedTimeline.length - 1].hash !== mostTrustedVersionHash)){
+                calculatedTimeline.push({timeStart: time, hash: mostTrustedVersionHash})
+            }
+            else if (withConfidence === true){
+                let confidence = mostTrustedVersionScore / totalTrustOfAllVersions;
+                calculatedTimeline.push({timeStart: time, hash: mostTrustedVersionHash, confidence: confidence, totalVersions: totalVersions})
+            }
+        }else{
+            // run through all versions again and calculate their confidence
+            let trustedVersions = []
+            for (const [hash, hashinfo] of hashes) {
+                let trust = await calculate_trust_of_version_at_time(aol, url, hash, time)
+                //console.log(" hash: " + hash + " trust: " + trust)
+                if (trust/totalTrustOfAllVersions > minimum_confidence){
+                    trustedVersions.push({hash: hash, confidence: trust/totalTrustOfAllVersions})
+                }
+            }
+            calculatedTimeline.push({timeStart: time, versions: trustedVersions, totalVersions: totalVersions})
         }
-        else if (withConfidence === true){
-            let confidence = mostTrustedVersionScore / totalTrustOfAllVersions;
-            calculatedTimeline.push({timeStart: time, hash: mostTrustedVersionHash, confidence: confidence, versions: totalVersions})
-        }
-
 
     }
 

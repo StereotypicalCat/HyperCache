@@ -7,6 +7,7 @@ import {
 } from "./TrustManager.js";
 import {GetWebsiteFakedPlaintext} from "./WebsiteManager.js";
 import {getTime} from "./TimeManager.js";
+import util from 'util';
 
 let getBestAndWorstTrustRatios = async (aol) => {
     console.log("Calculating different trust ratios")
@@ -88,7 +89,7 @@ export let printWebsiteTimelines = async (aol, withConfidence = false) => {
 
         console.log("==== " + url + " ====")
         let timeline = await calculate_approximate_timeline_of_url(aol, url, endTime, withConfidence)
-        console.log(timeline)
+        console.log(util.inspect(timeline, {showHidden: false, depth: null, colors: true}))
     }
 }
 
