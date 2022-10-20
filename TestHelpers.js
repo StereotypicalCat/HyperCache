@@ -93,47 +93,54 @@ export let printWebsiteTimelines = async (aol, withConfidence = false) => {
     }
 }
 
-let calculateConfusionMatrix = async (aol) => {
+export let calculateConfusionMatrix = async (aol) => {
     // Calculates the confusion matrix for the aol
     // This means calculating true-positives, false-positive, true-negative, false-negative.
     // This is done by comparing the aol to the correct list of websites.
-
-    // Start by getting the correct list of websites
-    let correctWebsites = await GetWebsiteFakedPlaintext();
 
     // Get the websites from the aol
     let websites = await aol.read();
 
     // Create the confusion matrix
     let confusionMatrix = {
-        truePositive: 0,
-        falsePositive: 0,
-        trueNegative: 0,
-        falseNegative: 0
+        correct_website_trusted: 0,
+        correct_website_not_trusted: 0,
+        wrong_website_trusted: 0
     }
 
-    // The amount of trust a website has to have to be considered trusted in the aol
-    const tempMinRatio = 2;
+    let endTime = getTime();
 
-    // Loop through the websites in the aol
     for (const [url, hashes] of websites){
-        // Check if the url is in the correct list of websites
-        if (correctWebsites.has(url)){
 
-            // Check if the url is trusted
-            if (await calculate_trust_of_version(aol, url, hashes.get("correctHash")) > tempMinRatio){
-                // The url is trusted, so it is a true positive
-                confusionMatrix.truePositive++;
-            } else {
-                // The url is not trusted, so it is a false negative
-                confusionMatrix.falseNegative++;
+        let timeline = await calculate_approximate_timeline_of_url(aol, url, endTime, true)
+        for (let slot = 0; slot < timeline.length; slot++){
+            let correctVersion = await getWebsiteFaked(url, false, slot)
+            let noOfVersions = timeline[slot].versions.length;
+
+/*            console.log("======")
+            console.log("correct version: " + correctVersion)
+            console.log("no of versions: " + noOfVersions)
+            console.log("timeline: " + util.inspect(timeline[slot].versions.map(obj => obj.hash), {showHidden: false, depth: null, colors: true}))
+            console.log("======")*/
+
+            let containsCorrectVersion = timeline[slot].versions.map(obj => obj.hash).includes(correctVersion);
+
+
+            if (containsCorrectVersion){
+                confusionMatrix.correct_website_trusted++;
+                let incorrectTrusted = Math.max(noOfVersions - 1, 0);
+                confusionMatrix.wrong_website_trusted += incorrectTrusted;
+            }else{
+                //console.log("==============")
+                //console.log("Website at slot " + slot + " doesnt trust real version, which is ", correctVersion);
+                //console.log("Trusts these instead ", timeline[slot].versions.map(obj => obj.hash));
+                confusionMatrix.correct_website_not_trusted++;
+                confusionMatrix.wrong_website_trusted += noOfVersions;
             }
-        } else {
-            // The url is not in the correct list of websites, so it is a false positive
-            confusionMatrix.falsePositive++;
         }
     }
 
+    return confusionMatrix;
 
 }
 

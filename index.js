@@ -7,6 +7,7 @@ import pkg from 'uuid';
 import {startNetworkWithConfig} from "./PeerBehaviours.js";
 import {calculate_trust_of_version, printTrustMatrix, printTrustOfEachPeer} from "./TrustManager.js";
 import {
+    calculateConfusionMatrix,
     calculateTemporalIncorrectness,
     getBestAndWorstTrustRatios,
     printUsefulStats,
@@ -46,9 +47,17 @@ setTimeout(async () => {
     //let ratio = await calculateTemporalIncorrectness(aol)
     //console.log(ratio)
 
-    await printWebsiteTimelines(aol, true);
-    let val = await GetWebsiteFakedPlaintext();
-    console.log(val)
+    //await printWebsiteTimelines(aol, true);
+    //let val = await GetWebsiteFakedPlaintext();
+    //console.log(val)
+
+    let confusion_matrix = await calculateConfusionMatrix(aol);
+    console.log(confusion_matrix);
+
+    //await printWebsiteTimelines(aol, true);
+    //let val = await GetWebsiteFakedPlaintext();
+    //console.log(val)
+
 
 }, (max_time*1000) + 2 * 1000);
 

@@ -3,11 +3,18 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {getBestAndWorstTrustRatios} from "./TestHelpers.js";
-import {max_request_time, max_time, min_request_time} from "./SimulationParameters.js";
+import {
+    max_number_of_versions_per_website,
+    max_request_time,
+    max_time, min_number_of_versions_per_website,
+    min_request_time,
+    number_of_websites_to_generate
+} from "./SimulationParameters.js";
 import {getTime} from "./TimeManager.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 
 
 // https://stackoverflow.com/questions/10049557/reading-all-files-in-a-directory-store-them-in-objects-and-send-the-object
@@ -76,6 +83,8 @@ let getWebsiteFaked = async (url, withDelay = true, specificSlot = -1) => {
         }
     }
 
+    //console.log(closestWebsite + " : " + closestTime + " : " + currentTime);
+
     return closestWebsite;
 }
 
@@ -114,22 +123,35 @@ let GetWebsiteFakedPlaintext = async () => {
         return fakedPlaintextWebsites;
     }
 
+    console.log("generating faked websites");
+
     let webFiles = new Map();
 
-    for(let i = 0; i < 3; i++){
+    for(let i = 0; i < number_of_websites_to_generate; i++){
         let url = "url" + i;
         let data = "correctHash" + i;
 
-        // Generate between 1 and 10 versions for each hash
-
-        let versions = Math.floor(Math.random() * 10) + 1;
-        let timestamps = [];
+        let versions = Math.max(Math.floor(Math.random() * max_number_of_versions_per_website), min_number_of_versions_per_website);
+        let timestamps = new Set();
 
         // Generate random timestamps
         for(let j = 0; j < versions; j++){
-            timestamps.push(Math.floor(Math.random() * max_time))
+            let unique = false;
+
+            // This is bad very smelly code. I'm sorry.
+            while (!unique){
+                let randomVal = Math.floor(Math.random() * max_time)
+
+                if (!timestamps.has(randomVal)){
+                    timestamps.add(randomVal)
+                    unique = true;
+                }
+            }
+
         }
-        timestamps = [...new Set(timestamps)];
+
+        // Deconstruct sett to array
+        timestamps = [...timestamps];
 
         timestamps.sort((a, b) => a - b)
 

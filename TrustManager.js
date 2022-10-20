@@ -1,4 +1,4 @@
-import {minimum_confidence, only_most_trusted} from "./SimulationParameters.js";
+import {logistic_k, logistic_L, logistic_x0, minimum_confidence, only_most_trusted} from "./SimulationParameters.js";
 
 const trust_for_new_resource = 4;
 const trust_for_validating_resource = 1;
@@ -125,7 +125,20 @@ async function calculate_trust_of_version(aol, url, hash){
 }
 
 function inverseLogsticFunction(x){
-    return 1 -(1/(1+Math.exp(-x)));
+
+    // Curves maximum value
+    const L = logistic_L;
+
+    // The logistic growth rate of the curve
+    const k = logistic_k;
+
+    // The x value of the sigmoid's midpoint on the x axis
+    // Basically controls the bias of future versions vs previous versions
+    let x0 = logistic_x0;
+
+    let logisticPart = (L/(1+Math.exp(-k*(x-x0))));
+
+    return 1 - logisticPart;
 }
 
 async function calculate_trust_of_version_at_time(aol, url, hash, slot){
@@ -150,7 +163,7 @@ async function calculate_trust_of_version_at_time(aol, url, hash, slot){
         let user_trust = await calculate_full_trust_of_user(aol, websites.get(url).get(hash).validations[i].peerId);
 
         // Scale the trust accumulated with the time since the validation
-        let timeSinceValidation = Math.abs(slot - websites.get(url).get(hash).validations[i].time);
+        let timeSinceValidation = websites.get(url).get(hash).validations[i].time - slot
         let scaleValue = inverseLogsticFunction(timeSinceValidation)
         //console.log("Scale value: ", scaleValue, "Time since validation:", timeSinceValidation)
 

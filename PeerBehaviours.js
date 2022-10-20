@@ -60,8 +60,8 @@ let doP2PProtocolWithPlaintext = async (plaintext, url, aol, peerNum) => {
     }
 }
 
+// Always returns the "correct url"
 let purePeerStrategy = async (peerNum, aol, urls, requester) => {
-
     for (const url of urls){
         //console.log("Peer " + peerNum + " requesting " + url);
         //console.log("new url: " + url)
@@ -70,6 +70,7 @@ let purePeerStrategy = async (peerNum, aol, urls, requester) => {
         await doP2PProtocolWithPlaintext(response, url, aol, peerNum)
     }
 }
+
 let consistentlyMaliciousPeerStrategy = async (peerNum, aol, urls, requester) => {
     for (const url of urls){
         //console.log("Peer " + peerNum + " requesting " + url);
@@ -80,6 +81,8 @@ let consistentlyMaliciousPeerStrategy = async (peerNum, aol, urls, requester) =>
         await doP2PProtocolWithPlaintext(response, url, aol, peerNum)
     }
 }
+
+// Might be malicious, but might also sometimes just get served a different url such as a regional different page but with the same url.
 let sometimesMaliciousPeerStrategy = async (peerNum, aol, urls, requester) => {
     for (const url of urls){
 
