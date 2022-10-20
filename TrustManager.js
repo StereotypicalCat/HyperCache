@@ -2,7 +2,7 @@ import {logistic_k, logistic_L, logistic_x0, minimum_confidence, only_most_trust
 
 const trust_for_new_resource = 4;
 const trust_for_validating_resource = 1;
-const popolous_multiplier = 0.1;
+const popolous_multiplier = 0.5;
 
 
 // Needs to be rewritten and refactored to work with key-like ids instead of numbers

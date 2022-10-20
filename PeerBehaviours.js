@@ -1,11 +1,13 @@
 import {convertPlaintextToHashTree} from "./TreeManager.js";
 import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
 import {
+    chance_a_peer_churns,
     chance_of_sometimes_being_malicious,
     max_peer_time_before_first_request, min_peer_time_before_first_request,
     peer_timeout
 } from "./SimulationParameters.js";
 import {getTime} from "./TimeManager.js";
+import {Mutex} from "async-mutex";
 
 /*
 let testUrls = [
@@ -107,16 +109,25 @@ let startPeer = async (peerNum, aol, urls, requester, documentChangeStrategy) =>
     const thisPeersUrls = [...urls]
     shuffle(thisPeersUrls)
 
+    let currentPeerNum = peerNum;
+
     let mainLoop = async () => {
         // print the second mark when the peer starts
         //console.log("Pure Peer " + peerNum + " starting again");
 
-        await documentChangeStrategy(peerNum, aol, thisPeersUrls, requester)
+        await documentChangeStrategy(currentPeerNum, aol, thisPeersUrls, requester)
+
+        if (Math.random() <= chance_a_peer_churns){
+            shuffle(thisPeersUrls)
+            currentPeerNum = await getNewPeerNumber();
+        }
 
         setTimeout(mainLoop, peer_timeout * 1000);
     }
     setTimeout(mainLoop, delayToWait)
 }
+
+
 
 export let startNetworkWithConfig = async (purePeers, ConsistentMalicious, SometimesMalicious, urlsToRequest, requestMethod) => {
     const aol = new AppendOnlyLog(purePeers + ConsistentMalicious + SometimesMalicious);
@@ -131,5 +142,44 @@ export let startNetworkWithConfig = async (purePeers, ConsistentMalicious, Somet
         startPeer(i, aol, urlsToRequest, requestMethod, sometimesMaliciousPeerStrategy)
     }
 
+    await setPeerNumberStart(purePeers + ConsistentMalicious + SometimesMalicious)
+
     return aol;
+}
+
+const shouldStopPeersMutex = new Mutex();
+let shouldStopPeers = false;
+let stopPeers = async () => {
+    const release = await shouldStopPeersMutex.acquire();
+    shouldStopPeers = true;
+    release();
+}
+let shouldStopPeersCheck = async () => {
+    const release = await shouldStopPeersMutex.acquire();
+    let toReturn = shouldStopPeers;
+    release();
+    return toReturn;
+}
+
+
+const peerNumberMutex = new Mutex();
+let nextPeerNum = -1;
+let setPeerNumberStart = async (peerNum) => {
+    const release = await peerNumberMutex.acquire();
+    try {
+        nextPeerNum = peerNum;
+    }
+    finally {
+        release();
+    }
+}
+let getNewPeerNumber = async () => {
+    const release = await peerNumberMutex.acquire();
+    try {
+        nextPeerNum++;
+        return nextPeerNum;
+    }
+    finally {
+        release();
+    }
 }

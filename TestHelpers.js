@@ -188,8 +188,12 @@ export const testDifferentValuesOfLogisticFunction = async(aol) => {
     let best_incorrect_website_trusted_x0 = undefined;
     let best_incorrect_website_trusted_k = undefined;
 
-    for (let logistic_k_to_test = 0.1; logistic_k_to_test < 10; logistic_k_to_test += 0.3){
-        for(let logistic_x0_to_test = -7; logistic_x0_to_test < 7; logistic_x0_to_test += 0.3){
+    let best_overall = {correct_website_trusted: 0, correct_website_not_trusted: Infinity, wrong_website_trusted: Infinity};
+    let best_overall_x0 = undefined;
+    let best_overall_k = undefined;
+
+    for (let logistic_k_to_test = 0.1; logistic_k_to_test < 10; logistic_k_to_test +=1){
+        for(let logistic_x0_to_test = -7; logistic_x0_to_test < 7; logistic_x0_to_test += 1){
             //console.log("logistic_k: " + logistic_k_to_test + " logistic_x0: " + logistic_x0_to_test)
             updateValue('logistic_k', logistic_k_to_test);
             updateValue('logistic_x0', logistic_x0_to_test);
@@ -212,6 +216,15 @@ export const testDifferentValuesOfLogisticFunction = async(aol) => {
                 best_incorrect_website_trusted_x0 = logistic_x0_to_test;
                 best_incorrect_website_trusted_k = logistic_k_to_test;
             }
+
+            let fitness = ratio.correct_website_trusted - ratio.correct_website_not_trusted - ratio.wrong_website_trusted;
+            let best_fitness = best_overall.correct_website_trusted - best_overall.correct_website_not_trusted - best_overall.wrong_website_trusted;
+            if (fitness < best_fitness){
+                best_overall = ratio;
+                best_overall_x0 = logistic_x0_to_test;
+                best_overall_k = logistic_k_to_test;
+            }
+
         }
     }
 
@@ -228,6 +241,10 @@ export const testDifferentValuesOfLogisticFunction = async(aol) => {
     console.log("best_incorrect_website_trusted: " + util.inspect(best_incorrect_website_trusted, {showHidden: false, depth: null, colors: true})
         + " logistic_k: " + best_incorrect_website_trusted_k +
         " logistic_x0: " + best_incorrect_website_trusted_x0)
+
+    console.log("best_overall: " + util.inspect(best_overall, {showHidden: false, depth: null, colors: true})
+        + " logistic_k: " + best_overall_k +
+        " logistic_x0: " + best_overall_x0)
 }
 
 export {getBestAndWorstTrustRatios, printUsefulStats}
