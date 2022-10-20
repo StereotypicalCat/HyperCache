@@ -1,5 +1,8 @@
 // Works similairly to slots in blockchain.
 
+
+
+
 let startTime = -1;
 
 export let getTime = () => {
@@ -8,5 +11,4 @@ export let getTime = () => {
     }
 
     return (new Date().getTime() / 1000) - startTime;
-
 }

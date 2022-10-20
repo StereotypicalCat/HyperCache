@@ -31,7 +31,7 @@ class AppendOnlyLog{
         }
     }
 
-    async tryAddNewVersion(tree, peerId, url){
+    async tryAddNewVersion(tree, peerId, url, time){
         const release = await this.lock.acquire();
         try{
             let toplevelhash = tree.value;
@@ -53,11 +53,11 @@ class AppendOnlyLog{
                     tree: tree,
                     peerId: peerId,
                     signature: null,
-                    time: getTime(),
+                    time: time,
                     validations: []
                 })
 
-                this.logHistory.push(peerId + " submitted version " + toplevelhash + " for url " + url)
+                this.logHistory.push(peerId + " submitted version " + toplevelhash + " for url " + url + "at time " + time)
 
                 return true
             } else{
@@ -69,7 +69,7 @@ class AppendOnlyLog{
 
     }
 
-    async tryAddNewValidation(tree, peerId, url){
+    async tryAddNewValidation(tree, peerId, url, time){
         const release = await this.lock.acquire();
 
         const toplevelhash = tree.value;
@@ -85,10 +85,10 @@ class AppendOnlyLog{
 
             this.websites.get(url).get(toplevelhash).validations.push({
                 peerId: peerId,
-                time: getTime(),
+                time: time,
                 signature: null
             })
-            this.logHistory.push(peerId + " validated version " + toplevelhash + " for url " + url)
+            this.logHistory.push(peerId + " validated version " + toplevelhash + " for url " + url + "at time " + time)
 
         } finally {
             release();

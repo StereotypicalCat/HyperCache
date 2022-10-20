@@ -5,6 +5,7 @@ import {
     max_peer_time_before_first_request, min_peer_time_before_first_request,
     peer_timeout
 } from "./SimulationParameters.js";
+import {getTime} from "./TimeManager.js";
 
 /*
 let testUrls = [
@@ -47,16 +48,16 @@ let doP2PProtocol = async (document, url, aol, peerNum) => {
     }
 }
 
-let doP2PProtocolWithPlaintext = async (plaintext, url, aol, peerNum) => {
+let doP2PProtocolWithPlaintext = async (plaintext, url, aol, peerNum, time) => {
 
     let hashTree = {
         value: plaintext
     }
 
-    let wasSuccess = await aol.tryAddNewVersion(hashTree, peerNum, url)
+    let wasSuccess = await aol.tryAddNewVersion(hashTree, peerNum, url, time)
 
     if (!wasSuccess){
-        await aol.tryAddNewValidation(hashTree, peerNum, url)
+        await aol.tryAddNewValidation(hashTree, peerNum, url, time)
     }
 }
 
@@ -67,7 +68,8 @@ let purePeerStrategy = async (peerNum, aol, urls, requester) => {
         //console.log("new url: " + url)
         let response = await requester(url);
 
-        await doP2PProtocolWithPlaintext(response, url, aol, peerNum)
+        let timestamp = getTime();
+        await doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
     }
 }
 
@@ -78,7 +80,8 @@ let consistentlyMaliciousPeerStrategy = async (peerNum, aol, urls, requester) =>
 
         let response = url + "_malicious"
 
-        await doP2PProtocolWithPlaintext(response, url, aol, peerNum)
+        let timestamp = getTime();
+        await doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
     }
 }
 
@@ -94,7 +97,8 @@ let sometimesMaliciousPeerStrategy = async (peerNum, aol, urls, requester) => {
             doc = requester(url);
         }
 
-        await doP2PProtocolWithPlaintext(doc, url, aol, peerNum)
+        let timestamp = getTime();
+        await doP2PProtocolWithPlaintext(doc, url, aol, peerNum, timestamp)
     }
 }
 let startPeer = async (peerNum, aol, urls, requester, documentChangeStrategy) => {

@@ -8,6 +8,8 @@ import {
 import {getWebsiteFaked, GetWebsiteFakedPlaintext} from "./WebsiteManager.js";
 import {getTime} from "./TimeManager.js";
 import util from 'util';
+import _ from "lodash";
+import {updateValue} from "./SimulationParameters.js";
 
 let getBestAndWorstTrustRatios = async (aol) => {
     console.log("Calculating different trust ratios")
@@ -93,7 +95,7 @@ export let printWebsiteTimelines = async (aol, withConfidence = false) => {
     }
 }
 
-export let calculateConfusionMatrix = async (aol) => {
+export let calculateConfusionMatrix = async (aol, endTime) => {
     // Calculates the confusion matrix for the aol
     // This means calculating true-positives, false-positive, true-negative, false-negative.
     // This is done by comparing the aol to the correct list of websites.
@@ -107,8 +109,6 @@ export let calculateConfusionMatrix = async (aol) => {
         correct_website_not_trusted: 0,
         wrong_website_trusted: 0
     }
-
-    let endTime = getTime();
 
     for (const [url, hashes] of websites){
 
@@ -172,6 +172,62 @@ export let calculateTemporalIncorrectness = async (aol, relaxed = false) => {
 
     return correctSlots / totalSlots;*/
 
+}
+
+export const testDifferentValuesOfLogisticFunction = async(aol) => {
+    let aolDeepCopy = _.cloneDeep(aol);
+    let endTime = getTime();
+
+    let best_correct_website_trusted = {correct_website_trusted: 0};
+    let best_correct_website_trusted_x0 = undefined;
+    let best_correct_website_trusted_k = undefined;
+    let best_correct_website_not_trusted = {correct_website_not_trusted: Infinity};
+    let best_correct_website_not_trusted_x0 = undefined;
+    let best_correct_website_not_trusted_k = undefined;
+    let best_incorrect_website_trusted = {wrong_website_trusted: Infinity};
+    let best_incorrect_website_trusted_x0 = undefined;
+    let best_incorrect_website_trusted_k = undefined;
+
+    for (let logistic_k_to_test = 0.1; logistic_k_to_test < 10; logistic_k_to_test += 0.3){
+        for(let logistic_x0_to_test = -7; logistic_x0_to_test < 7; logistic_x0_to_test += 0.3){
+            //console.log("logistic_k: " + logistic_k_to_test + " logistic_x0: " + logistic_x0_to_test)
+            updateValue('logistic_k', logistic_k_to_test);
+            updateValue('logistic_x0', logistic_x0_to_test);
+            //aol = _.cloneDeep(jsonDeepCopy);
+            let ratio = await calculateConfusionMatrix(aolDeepCopy, endTime)
+            //console.log(ratio)
+
+            if (ratio.correct_website_trusted > best_correct_website_trusted.correct_website_trusted){
+                best_correct_website_trusted = ratio;
+                best_correct_website_trusted_x0 = logistic_x0_to_test;
+                best_correct_website_trusted_k = logistic_k_to_test;
+            }
+            if (ratio.correct_website_not_trusted < best_correct_website_not_trusted.correct_website_not_trusted){
+                best_correct_website_not_trusted = ratio;
+                best_correct_website_not_trusted_x0 = logistic_x0_to_test;
+                best_correct_website_not_trusted_k = logistic_k_to_test;
+            }
+            if (ratio.wrong_website_trusted < best_incorrect_website_trusted.wrong_website_trusted){
+                best_incorrect_website_trusted = ratio;
+                best_incorrect_website_trusted_x0 = logistic_x0_to_test;
+                best_incorrect_website_trusted_k = logistic_k_to_test;
+            }
+        }
+    }
+
+    console.log("best_correct_website_trusted: " +
+        util.inspect(best_correct_website_trusted, {showHidden: false, depth: null, colors: true}) +
+        " logistic_k: " + best_correct_website_trusted_k +
+        " logistic_x0: " + best_correct_website_trusted_x0)
+
+    console.log("best_correct_website_not_trusted: " +
+        util.inspect(best_correct_website_not_trusted, {showHidden: false, depth: null, colors: true})
+        + " logistic_k: " + best_correct_website_not_trusted_k +
+        " logistic_x0: " + best_correct_website_not_trusted_x0)
+
+    console.log("best_incorrect_website_trusted: " + util.inspect(best_incorrect_website_trusted, {showHidden: false, depth: null, colors: true})
+        + " logistic_k: " + best_incorrect_website_trusted_k +
+        " logistic_x0: " + best_incorrect_website_trusted_x0)
 }
 
 export {getBestAndWorstTrustRatios, printUsefulStats}

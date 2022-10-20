@@ -17,6 +17,7 @@
     "hypercore-promisifier": "^1.1.0",
     "hyperswarm": "^3.0.4",
     "jsdom": "^20.0.0",
+    "lodash": "^4.17.21",
     "node-warc": "^3.3.1",
     "prettier": "^2.7.1",
     "pretty": "^2.0.0"

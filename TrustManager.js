@@ -2,7 +2,7 @@ import {logistic_k, logistic_L, logistic_x0, minimum_confidence, only_most_trust
 
 const trust_for_new_resource = 4;
 const trust_for_validating_resource = 1;
-const popolous_multiplier = 1.05;
+const popolous_multiplier = 0.1;
 
 
 // Needs to be rewritten and refactored to work with key-like ids instead of numbers
@@ -136,7 +136,7 @@ function inverseLogsticFunction(x){
     // Basically controls the bias of future versions vs previous versions
     let x0 = logistic_x0;
 
-    let logisticPart = (L/(1+Math.exp(-k*(x-x0))));
+    let logisticPart = (L/(1+Math.exp((-k)*(x-x0))));
 
     return 1 - logisticPart;
 }
@@ -151,24 +151,27 @@ async function calculate_trust_of_version_at_time(aol, url, hash, slot){
     }
 
     let trust = await calculate_full_trust_of_user(aol, websites.get(url).get(hash).peerId);
-    let timeSinceInitialSubmission = Math.abs(slot - websites.get(url).get(hash).time);
+    let timeSinceInitialSubmission = Math.abs(websites.get(url).get(hash).time - slot);
     let initialUserScaleValue = inverseLogsticFunction(timeSinceInitialSubmission)
     trust *= initialUserScaleValue;
 
 
     // Bonus works to restrict karma whoring
-    let bonus = popolous_multiplier;
+    let bonus = 1;
     // the trust of the version is the sum of the trust of the peers that validated it plus the peer who placed it there
     for (let i = 0; i < websites.get(url).get(hash).validations.length; i++) {
         let user_trust = await calculate_full_trust_of_user(aol, websites.get(url).get(hash).validations[i].peerId);
 
         // Scale the trust accumulated with the time since the validation
-        let timeSinceValidation = websites.get(url).get(hash).validations[i].time - slot
+        let timeSinceValidation = Math.abs(websites.get(url).get(hash).validations[i].time - slot)
+        //console.log(websites.get(url).get(hash).validations[i].time)
+        //console.log(slot)
+        //console.log(timeSinceValidation)
         let scaleValue = inverseLogsticFunction(timeSinceValidation)
         //console.log("Scale value: ", scaleValue, "Time since validation:", timeSinceValidation)
 
         trust += user_trust * scaleValue;
-        bonus *= popolous_multiplier;
+        bonus += popolous_multiplier * scaleValue;
     }
 
     trust *= bonus;
