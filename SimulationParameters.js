@@ -12,7 +12,14 @@ export const max_peer_time_before_first_request = 2;
 // timeout of peer clients before they go revalidate a website
 export const peer_timeout = 5;
 
-// Only trust one version per slot. TODO: Currently not implemented
+// Only trust one version per slot. TODO: Currently not implemented. Should only be set to false.
 export const only_most_trusted = false;
 // the minimum confidence that a version must have to be trusted
 export const minimum_confidence = 0.4;
+
+
+export const amount_of_pure_peers = 25;
+export const amount_of_consistently_malicious_peers = 2;
+export const amount_of_sometimes_malicious_peers = 3;
+
+export const chance_of_sometimes_being_malicious = 0.1;

@@ -167,6 +167,18 @@ class AppendOnlyLog{
 
     }
 
+    async printAsConsoleLog(){
+        const release = await this.lock.acquire();
+
+        try{
+            console.log(this)
+        }
+        finally {
+            release();
+        }
+
+    }
+
 }
 
 export {AppendOnlyLog};

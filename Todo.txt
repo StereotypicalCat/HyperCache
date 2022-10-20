@@ -1,7 +1,7 @@
 // This file is meant to represent what needs to be done in the next dev iteration.
 
 TODO: create test functions to automate collecting data.
-TODO: Fix bad actors so they work too.
 TODO: Change getTime to use variable slot length.
+TODO: Refactorization on simulation parameters to multiple runs can be done automatically.
 
 BIG TODO: PSI versions of hashes.
