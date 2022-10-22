@@ -57,7 +57,7 @@ let getWebsiteFaked = async (url, withDelay = true, specificSlot = -1) => {
 
 
 
-    if (withDelay && !(max_request_time == 0 && min_request_time == 0)){
+    if (withDelay && !((max_request_time == 0) && (min_request_time == 0))){
         const randomDelay = 1000 * (Math.random() * (max_request_time - min_request_time) + min_request_time)
         await waitforme(randomDelay);
     }

@@ -5,7 +5,7 @@ class AppendOnlyLog{
 
     // NumberOfPeers only used for simulation.
     constructor(numberOfPeers){
-        this.numberOfPeers = numberOfPeers;
+        this.peersInSystem = new Map();
         this.websites = new Map();
         this.logHistory = [];
         this.lock = new Mutex();
@@ -14,7 +14,7 @@ class AppendOnlyLog{
     async getNumberOfPeers(){
         const release = await this.lock.acquire();
         try {
-            return this.numberOfPeers;
+            return this.peersInSystem.size + 1;
         }
         finally {
             release();
@@ -33,6 +33,11 @@ class AppendOnlyLog{
 
     async tryAddNewVersion(tree, peerId, url, time){
         const release = await this.lock.acquire();
+
+        if (!this.peersInSystem.has(peerId)){
+            this.peersInSystem.set(peerId, 1);
+        }
+
         try{
             let toplevelhash = tree.value;
 
@@ -71,6 +76,10 @@ class AppendOnlyLog{
 
     async tryAddNewValidation(tree, peerId, url, time){
         const release = await this.lock.acquire();
+
+        if (!this.peersInSystem.has(peerId)){
+            this.peersInSystem.set(peerId, 1);
+        }
 
         const toplevelhash = tree.value;
 

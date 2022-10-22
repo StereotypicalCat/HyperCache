@@ -31,7 +31,7 @@ const { v4: uuidv4 } = pkg;
 //let aol = await startNetworkWithConfig(60, 40, 10)
 
 
-let aol = await startNetworkWithConfig(amount_of_pure_peers, amount_of_consistently_malicious_peers, amount_of_sometimes_malicious_peers, await get_requestable_urls(), request_website)
+let aol = await startNetworkWithConfig(amount_of_pure_peers, amount_of_consistently_malicious_peers, amount_of_sometimes_malicious_peers, await get_requestable_urls(), request_website, max_time)
 
 setTimeout(async () => {
 
@@ -73,7 +73,7 @@ setTimeout(async () => {
     //await testDifferentValuesOfLogisticFunction(aol);
 
 
-}, (max_time*1000) + 2 * 1000);
+}, (max_time*1000) + 3 * 1000);
 
 setTimeout(async () => {
     console.log("About half the time has passed....");

@@ -2,7 +2,7 @@ import {logistic_k, logistic_L, logistic_x0, minimum_confidence, only_most_trust
 
 const trust_for_new_resource = 4;
 const trust_for_validating_resource = 1;
-const popolous_multiplier = 0.5;
+const popolous_multiplier = (1/10);
 
 
 // Needs to be rewritten and refactored to work with key-like ids instead of numbers
@@ -12,6 +12,8 @@ async function get_unique_peers(aol){
     // return list with numers 0 to 5
 
     const numberOfPeers = await aol.getNumberOfPeers();
+
+    //console.log("Total number of peers: ", numberOfPeers)
 
     return Array.from(Array(numberOfPeers).keys());
 
@@ -91,9 +93,19 @@ async function calculate_full_trust_of_user(aol, peerId){
         if (i === peerId){
             continue;
         }
+        if (isNaN(trustMatrix[i][peerId])){
+            console.log("ful trust of user: NaN while calculating trust of " + peerId + " from " + i)
+            console.table(trustMatrix)
+        }
+
         userTrust += trustMatrix[i][peerId];
     }
 
+    // TODO: THE PROBLEM IS SOMETHING RIGHT HERE
+    // THE PROBLEM IS WHEN PEERS CHURN...UNFORTUNETLY.
+    // !==============
+    // !=====================
+    // !===============
     return userTrust;
 }
 
@@ -110,12 +122,12 @@ async function calculate_trust_of_version(aol, url, hash){
     let trust = await calculate_full_trust_of_user(aol, websites.get(url).get(hash).peerId);
 
     // Bonus works to restrict karma whoring
-    let bonus = popolous_multiplier;
+    let bonus = 1;
     // the trust of the version is the sum of the trust of the peers that validated it plus the peer who placed it there
     for (let i = 0; i < websites.get(url).get(hash).validations.length; i++) {
         let user_trust = await calculate_full_trust_of_user(aol, websites.get(url).get(hash).validations[i].peerId);
         trust += user_trust;
-        bonus *= popolous_multiplier;
+        bonus += popolous_multiplier;
     }
 
     trust *= bonus;
@@ -243,7 +255,6 @@ async function calculate_trust_matrix(aol){
     let logHistoryLength = await aol.getLogLength();
 
     if (latestTrustMatrix !== undefined && latestVersionLength === logHistoryLength){
-        //console.log("reusing trust matrix.")
         return latestTrustMatrix;
     }
 
@@ -256,7 +267,11 @@ async function calculate_trust_matrix(aol){
     for (let i = 0; i < uniquePeers.length; i++) {
         trustMatrix.push([]);
         for (let j = 0; j < uniquePeers.length; j++) {
-            trustMatrix[i].push(await calculate_user_trust_of_user(aol, uniquePeers[i], uniquePeers[j]));
+            let test = await calculate_user_trust_of_user(aol, i, j);
+            if (isNaN(test)){
+                console.log("NaN While calculating trust of " + i + " and " + j)
+            }
+            trustMatrix[i].push(test);
         }
     }
 

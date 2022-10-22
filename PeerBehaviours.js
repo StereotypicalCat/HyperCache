@@ -57,7 +57,6 @@ let doP2PProtocolWithPlaintext = async (plaintext, url, aol, peerNum, time) => {
     }
 
     let wasSuccess = await aol.tryAddNewVersion(hashTree, peerNum, url, time)
-
     if (!wasSuccess){
         await aol.tryAddNewValidation(hashTree, peerNum, url, time)
     }
@@ -112,14 +111,20 @@ let startPeer = async (peerNum, aol, urls, requester, documentChangeStrategy) =>
     let currentPeerNum = peerNum;
 
     let mainLoop = async () => {
+
+        if (await shouldStopPeersCheck()){
+            return;
+        }
+
         // print the second mark when the peer starts
         //console.log("Pure Peer " + peerNum + " starting again");
 
         await documentChangeStrategy(currentPeerNum, aol, thisPeersUrls, requester)
 
-        if (Math.random() <= chance_a_peer_churns){
+        if (!(chance_a_peer_churns === 0) && Math.random() < chance_a_peer_churns){
             shuffle(thisPeersUrls)
             currentPeerNum = await getNewPeerNumber();
+            console.log("Peer " + peerNum + " has churned to " + currentPeerNum);
         }
 
         setTimeout(mainLoop, peer_timeout * 1000);
@@ -129,7 +134,7 @@ let startPeer = async (peerNum, aol, urls, requester, documentChangeStrategy) =>
 
 
 
-export let startNetworkWithConfig = async (purePeers, ConsistentMalicious, SometimesMalicious, urlsToRequest, requestMethod) => {
+export let startNetworkWithConfig = async (purePeers, ConsistentMalicious, SometimesMalicious, urlsToRequest, requestMethod, endTime) => {
     const aol = new AppendOnlyLog(purePeers + ConsistentMalicious + SometimesMalicious);
 
     for (let i = 0; i < purePeers; i++) {
@@ -143,6 +148,9 @@ export let startNetworkWithConfig = async (purePeers, ConsistentMalicious, Somet
     }
 
     await setPeerNumberStart(purePeers + ConsistentMalicious + SometimesMalicious)
+    setTimeout(() => {
+        stopPeers();
+    }, endTime * 1000)
 
     return aol;
 }
@@ -175,11 +183,16 @@ let setPeerNumberStart = async (peerNum) => {
 }
 let getNewPeerNumber = async () => {
     const release = await peerNumberMutex.acquire();
+
+    let returnVal;
+
     try {
         nextPeerNum++;
-        return nextPeerNum;
+        returnVal = nextPeerNum;
     }
     finally {
         release();
     }
+
+    return returnVal;
 }

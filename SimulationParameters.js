@@ -1,8 +1,8 @@
 // Max time in seconds that the simulation uses. Basically the time that the simulation runs.
-export let max_time = 30;
-export let number_of_websites_to_generate = 20;
+export let max_time = 60;
+export let number_of_websites_to_generate = 50;
 export let max_number_of_versions_per_website = 8;
-export let min_number_of_versions_per_website = 4;
+export let min_number_of_versions_per_website = 3;
 
 // min and max time it takes to request a website
 export let min_request_time = 0.1;
@@ -11,7 +11,7 @@ export let max_request_time = 0.2;
 // timeout to make sure peer number doesn't strictly correlate with request time
 export let min_peer_time_before_first_request = 0.5;
 export let max_peer_time_before_first_request = 0.5;
-export let chance_a_peer_churns = 0.01;
+export let chance_a_peer_churns = 0.05;
 
 // timeout of peer clients before they go revalidate a website
 export let peer_timeout = 1;
@@ -19,7 +19,7 @@ export let peer_timeout = 1;
 // Only trust one version per slot. TODO: Currently not implemented. Should only be set to false.
 export let only_most_trusted = false;
 // the minimum confidence that a version must have to be trusted
-export let minimum_confidence = 0.67;
+export let minimum_confidence = 0.667;
 
 export let amount_of_pure_peers = 50;
 export let amount_of_consistently_malicious_peers = 0;
