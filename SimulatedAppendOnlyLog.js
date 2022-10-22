@@ -4,7 +4,7 @@ import {getTime} from "./TimeManager.js";
 class AppendOnlyLog{
 
     // NumberOfPeers only used for simulation.
-    constructor(numberOfPeers){
+    constructor(){
         this.peersInSystem = new Map();
         this.websites = new Map();
         this.logHistory = [];

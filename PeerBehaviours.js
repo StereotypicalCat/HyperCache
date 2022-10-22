@@ -135,7 +135,7 @@ let startPeer = async (peerNum, aol, urls, requester, documentChangeStrategy) =>
 
 
 export let startNetworkWithConfig = async (purePeers, ConsistentMalicious, SometimesMalicious, urlsToRequest, requestMethod, endTime) => {
-    const aol = new AppendOnlyLog(purePeers + ConsistentMalicious + SometimesMalicious);
+    const aol = new AppendOnlyLog();
 
     for (let i = 0; i < purePeers; i++) {
         startPeer(i, aol, urlsToRequest, requestMethod, purePeerStrategy)

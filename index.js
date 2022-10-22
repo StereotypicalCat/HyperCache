@@ -23,17 +23,17 @@ import {
 import _ from "lodash";
 import {getTime} from "./TimeManager.js";
 import util from "util";
-const { v4: uuidv4 } = pkg;
+import cliProgress from "cli-progress";
 
+const { v4: uuidv4 } = pkg;
+// create a new progress bar instance and use shades_classic theme
 // Think about attack vector where adversary sends wrong log to new user (is this out of scope / countered by braha protocol)
 
 
 //let aol = await startNetworkWithConfig(60, 40, 10)
 
-
-let aol = await startNetworkWithConfig(amount_of_pure_peers, amount_of_consistently_malicious_peers, amount_of_sometimes_malicious_peers, await get_requestable_urls(), request_website, max_time)
-
-setTimeout(async () => {
+let calculatePostStats = async (aol) => {
+    console.log("calculating post stats...")
 
     //let {bestratio, worstratio} = await getBestAndWorstTrustRatios(aol);
     //console.log(bestratio)
@@ -45,7 +45,7 @@ setTimeout(async () => {
     //let val = await GetWebsiteFakedPlaintext();
     //console.log(val)
 
-   // await aol.printAsConsoleLog();
+    // await aol.printAsConsoleLog();
 
     //let ratio = await calculateTemporalIncorrectness(aol)
     //console.log(ratio)
@@ -71,10 +71,33 @@ setTimeout(async () => {
     //await aol.printLogHistory()
 
     //await testDifferentValuesOfLogisticFunction(aol);
+}
 
 
-}, (max_time*1000) + 3 * 1000);
 
-setTimeout(async () => {
-    console.log("About half the time has passed....");
-}, (max_time*1000) / 2);
+let aol = await startNetworkWithConfig(amount_of_pure_peers, amount_of_consistently_malicious_peers, amount_of_sometimes_malicious_peers, await get_requestable_urls(), request_website, max_time)
+
+let simulationTimeWithBuffer = max_time + 3
+const opt = {
+    format: 'progress [{bar}] {percentage}% | {value}/{total}',
+    stopOnComplete: true,
+}
+const simulation_timer = new cliProgress.SingleBar(opt, cliProgress.Presets.shades_classic);
+simulation_timer.start(simulationTimeWithBuffer, 0);
+let updateProgress = async (progressBar, time) => {
+    let newTime = getTime();
+    progressBar.update(Math.floor(newTime));
+
+    if (Math.floor(newTime) >= simulationTimeWithBuffer+1){
+        simulation_timer.stop();
+        await calculatePostStats(aol);
+        return;
+    }
+
+    setTimeout(() => {
+        updateProgress(progressBar, time)
+    }, time)
+}
+
+await updateProgress(simulation_timer, 1000)
+

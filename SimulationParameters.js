@@ -5,13 +5,13 @@ export let max_number_of_versions_per_website = 8;
 export let min_number_of_versions_per_website = 3;
 
 // min and max time it takes to request a website
-export let min_request_time = 0.1;
-export let max_request_time = 0.2;
+export let min_request_time = 0;
+export let max_request_time = 0;
 
 // timeout to make sure peer number doesn't strictly correlate with request time
-export let min_peer_time_before_first_request = 0.5;
-export let max_peer_time_before_first_request = 0.5;
-export let chance_a_peer_churns = 0.05;
+export let min_peer_time_before_first_request = 0.2;
+export let max_peer_time_before_first_request = 0.2;
+export let chance_a_peer_churns = 0.;
 
 // timeout of peer clients before they go revalidate a website
 export let peer_timeout = 1;
@@ -19,7 +19,7 @@ export let peer_timeout = 1;
 // Only trust one version per slot. TODO: Currently not implemented. Should only be set to false.
 export let only_most_trusted = false;
 // the minimum confidence that a version must have to be trusted
-export let minimum_confidence = 0.667;
+export let minimum_confidence = 0.7;
 
 export let amount_of_pure_peers = 50;
 export let amount_of_consistently_malicious_peers = 0;
