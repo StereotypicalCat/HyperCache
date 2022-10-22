@@ -1,5 +1,6 @@
 import {Mutex} from "async-mutex";
 import {getTime} from "./TimeManager.js";
+import {max_time} from "./SimulationParameters.js";
 
 class AppendOnlyLog{
 
@@ -22,6 +23,11 @@ class AppendOnlyLog{
     }
 
     async getLogLength(){
+        // If the simulation is ended, this can be sped up a whole lot as nothing should be adding to the log.
+        if (getTime() > max_time){
+            return this.logHistory.length;
+        }
+
         const release = await this.lock.acquire();
         try{
             return this.logHistory.length;
