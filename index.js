@@ -8,7 +8,7 @@ import {startNetworkWithConfig} from "./PeerBehaviours.js";
 import {calculate_trust_of_version, printTrustMatrix, printTrustOfEachPeer} from "./TrustManager.js";
 import {
     calculateConfusionMatrix,
-    calculateTemporalIncorrectness,
+    calculateTemporalCorrectnessStats,
     getBestAndWorstTrustRatios,
     printUsefulStats,
     printWebsiteTimelines, testDifferentValuesOfLogisticFunction
@@ -71,8 +71,12 @@ let calculatePostStats = async (aol) => {
     //await printWebsiteTimelines(aol, true);
     //let val = await GetWebsiteFakedPlaintext();
     //console.log(val)
-    let ratio = await calculateConfusionMatrix(aol, endTime)
-    console.log(ratio)
+    let confusion_matrix = await calculateConfusionMatrix(aol, endTime)
+    console.log(confusion_matrix)
+
+    let temporal_matrix = await calculateTemporalCorrectnessStats(aol, endTime);
+    console.log(temporal_matrix)
+
     //await aol.printLogHistory()
 
     //await testDifferentValuesOfLogisticFunction(aol);

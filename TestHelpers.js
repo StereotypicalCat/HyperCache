@@ -4,7 +4,7 @@ import {
     printTrustMatrix,
     printTrustOfEachPeer
 } from "./TrustManager.js";
-import {getAllCorrectWebsitesForUrl} from "./WebsiteManager.js";
+import {getAllCorrectWebsitesForUrl, getWebsiteFaked} from "./WebsiteManager.js";
 import {getTime} from "./TimeManager.js";
 import util from 'util';
 import _ from "lodash";
@@ -170,33 +170,90 @@ export let calculateConfusionMatrix = async (aol, endTime) => {
 
 }
 
-export let calculateTemporalIncorrectness = async (aol, relaxed = false) => {
-    // calculates the distance between the timelines of websites and the timeline on the aol
-/*    let websites = await aol.read()
-    let endTime = getTime();
-    let correctSlots = 0;
+export let calculateTemporalCorrectnessStats = async (aol, endTime) => {
+    // Get the websites from the aol
+    let websites = await aol.read();
 
-    for (const [url, hashes] of websites){
+    // Create the confusion matrix
+    let temporalCorrectnessMatrix = {
+        url_correct_slot: 0,
+        url_too_early: 0,
+        url_too_late: 0,
+        maximum_distance: 0,
+        total_slots: 0
+    }
 
-        //console.log("==== " + url + " ====")
+    for (const [url] of websites){
+
         let timeline = await calculate_approximate_timeline_of_url(aol, url, endTime, true)
+
+        // Make array with the correct version in each slot
+        let correctVersions = []
         for (let slot = 0; slot < timeline.length; slot++){
-            let correctVersion = getWebsiteFaked(url, false, slot)
-            for (let i = 0; i < timeline[slot].versions.lengtht; i++){
-                if(timeline[slot].versions[i].hash === correctVersion){
-                    correctSlots++;
+            let correctVersion = await getWebsiteFaked(url, false, slot);
+            correctVersions.push(correctVersion);
+        }
+
+        // Calculate the temporal correctness
+        for (let slot = 0; slot < timeline.length; slot++){
+            let versionsInSlot = timeline[slot].versions.map(obj => obj.hash);
+
+            temporalCorrectnessMatrix.total_slots++;
+
+            for (let version of versionsInSlot){
+                if (version === correctVersions[slot]){
+                    temporalCorrectnessMatrix.url_correct_slot++;
+                }else{
+                    let correctVersionIndex = correctVersions.indexOf(version);
+
+                    if (correctVersionIndex === -1){
+                        // This version not in timeline, ignore
+                        continue;
+                    }
+
+                    if (correctVersionIndex-slot > 0){
+                        temporalCorrectnessMatrix.url_too_early++;
+                    }else if (correctVersionIndex-slot < 0){
+                        temporalCorrectnessMatrix.url_too_late++;
+                    }
+
+                    temporalCorrectnessMatrix.maximum_distance = Math.max(temporalCorrectnessMatrix.maximum_distance, Math.abs(correctVersionIndex - slot))
+
                 }
             }
 
+
         }
+
+
+
+        /*        for (let slot = 0; slot < timeline.length; slot++){
+                    let noOfVersions = timeline[slot].versions.length;
+
+        /!*            console.log("======")
+                    console.log("correct version: " + correctVersion)
+                    console.log("no of versions: " + noOfVersions)
+                    console.log("timeline: " + util.inspect(timeline[slot].versions.map(obj => obj.hash), {showHidden: false, depth: null, colors: true}))
+                    console.log("======")*!/
+
+                    let containsCorrectVersion = timeline[slot].versions.map(obj => obj.hash).includes(correctVersion);
+
+
+                    if (containsCorrectVersion){
+                        confusionMatrix.correct_website_trusted++;
+                        let incorrectTrusted = Math.max(noOfVersions - 1, 0);
+                        confusionMatrix.wrong_website_trusted += incorrectTrusted;
+                    }else{
+                        //console.log("==============")
+                        //console.log("Website at slot " + slot + " doesnt trust real version, which is ", correctVersion);
+                        //console.log("Trusts these instead ", timeline[slot].versions.map(obj => obj.hash));
+                        confusionMatrix.correct_website_not_trusted++;
+                        confusionMatrix.wrong_website_trusted += noOfVersions;
+                    }
+                }*/
     }
 
-    let totalSlots = endTime * websites.length;
-
-    console.log("Correct: ", correctSlots)
-    console.log("Total: ", totalSlots)
-
-    return correctSlots / totalSlots;*/
+    return temporalCorrectnessMatrix;
 
 }
 
