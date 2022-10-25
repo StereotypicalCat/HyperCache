@@ -9,7 +9,7 @@ import {getTime} from "./TimeManager.js";
 import util from 'util';
 import _ from "lodash";
 import {minimum_confidence, updateValue} from "./SimulationParameters.js";
-
+import cliProgress from "cli-progress";
 
 let printUsefulStats = async (aol) => {
     //console.log(await aol.read());
@@ -116,6 +116,7 @@ export let calculateTemporalCorrectnessStats = async (aol, endTime) => {
         url_too_early: 0,
         url_too_late: 0,
         maximum_distance: 0,
+        total_distance: 0,
         total_slots: 0
     }
 
@@ -149,8 +150,11 @@ export let calculateTemporalCorrectnessStats = async (aol, endTime) => {
 
                     if (correctVersionIndex-slot > 0){
                         temporalCorrectnessMatrix.url_too_early++;
+                        temporalCorrectnessMatrix.total_distance += Math.abs(correctVersionIndex-slot);
                     }else if (correctVersionIndex-slot < 0){
                         temporalCorrectnessMatrix.url_too_late++;
+                        temporalCorrectnessMatrix.total_distance += Math.abs(correctVersionIndex-slot);
+
                     }
 
                     temporalCorrectnessMatrix.maximum_distance = Math.max(temporalCorrectnessMatrix.maximum_distance, Math.abs(correctVersionIndex - slot))
@@ -166,80 +170,108 @@ export let calculateTemporalCorrectnessStats = async (aol, endTime) => {
 
 }
 
-export const testDifferentValuesOfLogisticFunction = async(aol) => {
-    let aolDeepCopy = _.cloneDeep(aol);
-    let endTime = getTime();
+export const testDifferentValuesOfLogisticFunction = async(aol, endTime) => {
 
-    let best_correct_website_trusted = {correct_website_trusted: 0};
-    let best_correct_website_trusted_x0 = undefined;
-    let best_correct_website_trusted_k = undefined;
-    let best_correct_website_not_trusted = {correct_website_not_trusted: Infinity};
-    let best_correct_website_not_trusted_x0 = undefined;
-    let best_correct_website_not_trusted_k = undefined;
-    let best_incorrect_website_trusted = {wrong_website_trusted: Infinity};
-    let best_incorrect_website_trusted_x0 = undefined;
-    let best_incorrect_website_trusted_k = undefined;
+    let confusionMatrixConfigStats = [];
+    let confusionMatrixNoWrongTrustedStats = [];
+    let temporalCorrectnessConfigStats = [];
+    let bestTotalConfigStats = [];
 
-    let best_overall = {correct_website_trusted: 0, correct_website_not_trusted: Infinity, wrong_website_trusted: Infinity};
-    let best_overall_x0 = undefined;
-    let best_overall_k = undefined;
 
-    for (let min_confidence_to_test = 0.4; min_confidence_to_test <= 0.8; min_confidence_to_test += 0.1){
-        for (let logistic_k_to_test = 4; logistic_k_to_test < 6; logistic_k_to_test +=1){
-            for(let logistic_x0_to_test = -20; logistic_x0_to_test < -5; logistic_x0_to_test += 2.5){
-                //console.log("logistic_k: " + logistic_k_to_test + " logistic_x0: " + logistic_x0_to_test)
-                updateValue('logistic_k', logistic_k_to_test);
+    /*    const minconfidence = testDiffernetValuesTimer.create(0.8, 0.4);
+        const logistick = testDiffernetValuesTimer.create(7, 1);*/
+
+    // This doesn't test different simulation parameters. Only different trust parameters.
+    for (let min_confidence_to_test = 0.30; min_confidence_to_test <= 0.9; min_confidence_to_test += 0.075) {
+        updateValue('minimum_confidence', min_confidence_to_test);
+        console.log("Outer loop progress: " + min_confidence_to_test + "/0.9")
+        for (let logistic_k_to_test = 0.1; logistic_k_to_test < 7; logistic_k_to_test += 0.5) {
+            updateValue('logistic_k', logistic_k_to_test);
+            for (let logistic_x0_to_test = -10; logistic_x0_to_test <= 2.5; logistic_x0_to_test += 10) {
                 updateValue('logistic_x0', logistic_x0_to_test);
-                updateValue('minimum_confidence', min_confidence_to_test);
-                //aol = _.cloneDeep(jsonDeepCopy);
-                let ratio = await calculateConfusionMatrix(aolDeepCopy, endTime)
-                //console.log(ratio)
+                for (let trust_for_new_resources_to_test = 1; trust_for_new_resources_to_test < 10; trust_for_new_resources_to_test += 1) {
+                    updateValue('trust_for_new_resource', trust_for_new_resources_to_test);
+                    for (let trust_for_validating_resource_to_test = 1; trust_for_validating_resource_to_test < 10; trust_for_validating_resource_to_test += 1) {
+                        updateValue('trust_for_validating_resource', trust_for_validating_resource_to_test);
+                        for (let populous_multiplier_to_test = 0; populous_multiplier_to_test < 0.5; populous_multiplier_to_test += 0.05) {
+                            updateValue('popolous_multiplier', populous_multiplier_to_test);
 
-                if (ratio.correct_website_trusted > best_correct_website_trusted.correct_website_trusted){
-                    best_correct_website_trusted = ratio;
-                    best_correct_website_trusted_x0 = logistic_x0_to_test;
-                    best_correct_website_trusted_k = logistic_k_to_test;
-                }
-                if (ratio.correct_website_not_trusted < best_correct_website_not_trusted.correct_website_not_trusted){
-                    best_correct_website_not_trusted = ratio;
-                    best_correct_website_not_trusted_x0 = logistic_x0_to_test;
-                    best_correct_website_not_trusted_k = logistic_k_to_test;
-                }
-                if (ratio.wrong_website_trusted < best_incorrect_website_trusted.wrong_website_trusted){
-                    best_incorrect_website_trusted = ratio;
-                    best_incorrect_website_trusted_x0 = logistic_x0_to_test;
-                    best_incorrect_website_trusted_k = logistic_k_to_test;
-                }
+                            let calculatedConfusionMatrix = await calculateConfusionMatrix(aol, endTime);
+                            let calculatedTemporalCorrectnessMatrix = await calculateTemporalCorrectnessStats(aol, endTime);
 
-                let fitness = ratio.correct_website_trusted - ratio.correct_website_not_trusted - ratio.wrong_website_trusted;
-                let best_fitness = best_overall.correct_website_trusted - best_overall.correct_website_not_trusted - best_overall.wrong_website_trusted;
-                if (fitness > best_fitness){
-                    best_overall = ratio;
-                    best_overall_x0 = logistic_x0_to_test;
-                    best_overall_k = logistic_k_to_test;
-                }
+                            let confusion_matrix_total_versions = calculatedConfusionMatrix.correct_website_trusted + calculatedConfusionMatrix.correct_website_not_trusted + calculatedConfusionMatrix.wrong_website_trusted + calculatedConfusionMatrix.wrong_website_not_trusted;
+                            let confusion_matrix_correct_guesses = calculatedConfusionMatrix.correct_website_trusted + calculatedConfusionMatrix.wrong_website_not_trusted;
+                            let confusion_matrix_score = confusion_matrix_correct_guesses / confusion_matrix_total_versions;
+                            confusionMatrixConfigStats.push({
+                                score: confusion_matrix_score,
+                                min_confidence: min_confidence_to_test,
+                                logistic_k: logistic_k_to_test,
+                                logistic_x0: logistic_x0_to_test,
+                                trust_for_new_resources: trust_for_new_resources_to_test,
+                                trust_for_validating_resource: trust_for_validating_resource_to_test,
+                                populous_multiplier: populous_multiplier_to_test,
+                                ...calculatedConfusionMatrix
+                            })
 
+                            let temporal_correctness_score = calculatedTemporalCorrectnessMatrix.url_correct_slot / calculatedTemporalCorrectnessMatrix.total_slots;
+                            temporalCorrectnessConfigStats.push({
+                                score: temporal_correctness_score,
+                                min_confidence: min_confidence_to_test,
+                                logistic_k: logistic_k_to_test,
+                                logistic_x0: logistic_x0_to_test,
+                                trust_for_new_resources: trust_for_new_resources_to_test,
+                                trust_for_validating_resource: trust_for_validating_resource_to_test,
+                                populous_multiplier: populous_multiplier_to_test,
+                                ...calculatedTemporalCorrectnessMatrix
+                            });
+
+                            if (calculateConfusionMatrix.wrong_website_trusted === 0){
+                                confusionMatrixNoWrongTrustedStats.push({
+                                    score: confusion_matrix_score,
+                                    min_confidence: min_confidence_to_test,
+                                    logistic_k: logistic_k_to_test,
+                                    logistic_x0: logistic_x0_to_test,
+                                    trust_for_new_resources: trust_for_new_resources_to_test,
+                                    trust_for_validating_resource: trust_for_validating_resource_to_test,
+                                    populous_multiplier: populous_multiplier_to_test,
+                                    ...calculatedConfusionMatrix
+                                })
+                            }
+
+                            let total_score = (confusion_matrix_score + temporal_correctness_score)/2;
+                            bestTotalConfigStats.push({
+                                score: total_score,
+                                min_confidence: min_confidence_to_test,
+                                logistic_k: logistic_k_to_test,
+                                logistic_x0: logistic_x0_to_test,
+                                trust_for_new_resources: trust_for_new_resources_to_test,
+                                trust_for_validating_resource: trust_for_validating_resource_to_test,
+                                populous_multiplier: populous_multiplier_to_test,
+                                ...calculatedConfusionMatrix,
+                            });
+
+                        }
+                    }
+                }
             }
         }
     }
 
-    console.log("best_correct_website_trusted: " +
-        util.inspect(best_correct_website_trusted, {showHidden: false, depth: null, colors: true}) +
-        " logistic_k: " + best_correct_website_trusted_k +
-        " logistic_x0: " + best_correct_website_trusted_x0)
+    console.log("Sorting Results")
 
-    console.log("best_correct_website_not_trusted: " +
-        util.inspect(best_correct_website_not_trusted, {showHidden: false, depth: null, colors: true})
-        + " logistic_k: " + best_correct_website_not_trusted_k +
-        " logistic_x0: " + best_correct_website_not_trusted_x0)
+    confusionMatrixConfigStats.sort((a, b) => b.score - a.score);
+    temporalCorrectnessConfigStats.sort((a, b) => b.score - a.score);
+    bestTotalConfigStats.sort((a, b) => b.score - a.score);
+    confusionMatrixNoWrongTrustedStats.sort((a, b) => b.score - a.score);
 
-    console.log("best_incorrect_website_trusted: " + util.inspect(best_incorrect_website_trusted, {showHidden: false, depth: null, colors: true})
-        + " logistic_k: " + best_incorrect_website_trusted_k +
-        " logistic_x0: " + best_incorrect_website_trusted_x0)
+    console.log("Done")
+    return {
+confusionMatrixConfigStats,
+temporalCorrectnessConfigStats,
+bestTotalConfigStats,
+confusionMatrixNoWrongTrustedStats
+    }
 
-    console.log("best_overall: " + util.inspect(best_overall, {showHidden: false, depth: null, colors: true})
-        + " logistic_k: " + best_overall_k +
-        " logistic_x0: " + best_overall_x0)
 }
 
 export {printUsefulStats}

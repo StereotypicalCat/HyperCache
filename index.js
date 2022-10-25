@@ -36,13 +36,17 @@ let calculatePostStats = async (aol) => {
     //let val = await GetWebsiteFakedPlaintext();
     //console.log(val)
 
-    let confusion_matrix = await calculateConfusionMatrix(aol, endTime)
-    console.log(confusion_matrix)
+    //let confusion_matrix = await calculateConfusionMatrix(aol, endTime)
+    //console.log(confusion_matrix)
 
-    let temporal_matrix = await calculateTemporalCorrectnessStats(aol, endTime);
-    console.log(temporal_matrix)
+    //let temporal_matrix = await calculateTemporalCorrectnessStats(aol, endTime);
+    //console.log(temporal_matrix)
 
-    //await testDifferentValuesOfLogisticFunction(aol);
+    let scoreBoard = await testDifferentValuesOfLogisticFunction(aol, endTime);
+    console.log(scoreBoard.confusionMatrixConfigStats)
+    console.log(scoreBoard.temporalCorrectnessConfigStats)
+    console.log(scoreBoard.bestTotalConfigStats)
+    console.log(scoreBoard.confusionMatrixNoWrongTrustedStats)
 }
 
 

@@ -1,10 +1,10 @@
 // Max time in seconds that the simulation uses. Basically the time that the simulation runs.
-export let max_time = 25;
-export let number_of_websites_to_generate = 3;
+export let max_time = 80;
+export let number_of_websites_to_generate = 40;
 
 // Meaning EXTRA versions. All websites have at least 1 version, that being at time 0.
-export let max_number_of_versions_per_website = 2;
-export let min_number_of_versions_per_website = 4;
+export let max_number_of_versions_per_website = 9;
+export let min_number_of_versions_per_website = 2;
 
 // min and max time it takes to request a website
 export let min_request_time = 0.1;
@@ -23,11 +23,11 @@ export let only_most_trusted = false;
 // the minimum confidence that a version must have to be trusted
 export let minimum_confidence = 0.65;
 
-export let amount_of_pure_peers = 14;
-export let amount_of_consistently_malicious_peers = 5;
-export let amount_of_sometimes_malicious_peers = 2;
+export let amount_of_pure_peers = 28;
+export let amount_of_consistently_malicious_peers = 10;
+export let amount_of_sometimes_malicious_peers = 4;
 
-export let chance_of_sometimes_being_malicious = 0.2;
+export let chance_of_sometimes_being_malicious = 0.1;
 
 // Logistic function used to calculate trust
 export let logistic_L = 1;
@@ -73,7 +73,7 @@ export const updateValue = (key, value) => {
         only_most_trusted = value === "true";
     }
     if (key === "minimum_confidence"){
-        console.log("minimum_confidence", value);
+        //console.log("minimum_confidence", value);
         minimum_confidence = parseFloat(value);
     }
     if (key === "amount_of_pure_peers"){
@@ -92,12 +92,24 @@ export const updateValue = (key, value) => {
         logistic_L = parseFloat(value);
     }
     if (key === "logistic_k"){
-        console.log("logistic_k", value);
+        //console.log("logistic_k", value);
         logistic_k = parseFloat(value);
     }
     if (key === "logistic_x0"){
-        console.log("logistic_x0", value);
+        //console.log("logistic_x0", value);
         logistic_x0 = parseFloat(value);
+    }
+    if (key === "trust_for_new_resource"){
+        trust_for_new_resource = parseFloat(value);
+        //console.log("trust_for_new_resource", value);
+    }
+    if (key === "trust_for_validating_resource"){
+        trust_for_validating_resource = parseFloat(value);
+        //console.log("trust_for_validating_resource", value);
+    }
+    if (key === "popolous_multiplier"){
+        popolous_multiplier = parseFloat(value);
+        //console.log("popolous_multiplier", value);
     }
 }
 
