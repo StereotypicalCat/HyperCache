@@ -95,7 +95,7 @@ let sometimesMaliciousPeerStrategy = async (peerNum, aol, urls, requester) => {
             doc = url + "_malicious";
         }
         else{
-            doc = requester(url);
+            doc = await requester(url);
         }
 
         let timestamp = getTime();
@@ -124,7 +124,7 @@ let startPeer = async (peerNum, aol, urls, requester, documentChangeStrategy) =>
         if (!(chance_a_peer_churns === 0) && Math.random() < chance_a_peer_churns){
             shuffle(thisPeersUrls)
             currentPeerNum = await getNewPeerNumber();
-            console.log("Peer " + peerNum + " has churned to " + currentPeerNum);
+            //console.log("Peer " + peerNum + " has churned to " + currentPeerNum);
         }
 
         setTimeout(mainLoop, peer_timeout * 1000);

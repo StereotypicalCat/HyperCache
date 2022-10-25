@@ -2,7 +2,6 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import {getBestAndWorstTrustRatios} from "./TestHelpers.js";
 import {
     max_number_of_versions_per_website,
     max_request_time,
@@ -11,6 +10,8 @@ import {
     number_of_websites_to_generate
 } from "./SimulationParameters.js";
 import {getTime} from "./TimeManager.js";
+import randomInteger from 'random-int';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,12 +53,22 @@ function waitforme(milisec) {
     })
 }
 
+export let getAllCorrectWebsitesForUrl = async(url) => {
+    let webFiles = await GetWebsiteFakedPlaintext();
+    let websites = webFiles.get(url);
+    let correctWebsites = new Set();
+    for (let i = 0; i < websites.length; i++){
+        correctWebsites.add(websites[i].data);
+    }
+    return Array.from(correctWebsites);
+}
+
 let getWebsiteFaked = async (url, withDelay = true, specificSlot = -1) => {
     let webFiles = await GetWebsiteFakedPlaintext();
 
 
 
-    if (withDelay && !((max_request_time == 0) && (min_request_time == 0))){
+    if (withDelay && !((max_request_time === 0) && (min_request_time === 0))){
         const randomDelay = 1000 * (Math.random() * (max_request_time - min_request_time) + min_request_time)
         await waitforme(randomDelay);
     }
@@ -122,7 +133,7 @@ let GetWebsiteFakedPlaintext = async () => {
         return fakedPlaintextWebsites;
     }
 
-    console.log("generating faked websites");
+    //console.log("generating faked websites");
 
     let webFiles = new Map();
 
@@ -130,8 +141,14 @@ let GetWebsiteFakedPlaintext = async () => {
         let url = "url" + i;
         let data = "correctHash" + i;
 
-        let versions = Math.max(Math.floor(Math.random() * max_number_of_versions_per_website), min_number_of_versions_per_website);
+        //Close to random :)
+        //let versions = Math.max(Math.floor(min_number_of_versions_per_website + (Math.random() * (max_number_of_versions_per_website - min_number_of_versions_per_website + 0.9999))), min_number_of_versions_per_website);
+        let versions = randomInteger(min_number_of_versions_per_website, max_number_of_versions_per_website);
         let timestamps = new Set();
+
+        // A website always starts with a version.
+        // Even if a website theoretically isnt available on the web, that would still count as a version :)
+        timestamps.add(0);
 
         // Generate random timestamps
         for(let j = 0; j < versions; j++){

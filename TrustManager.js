@@ -1,9 +1,11 @@
-import {logistic_k, logistic_L, logistic_x0, minimum_confidence, only_most_trusted} from "./SimulationParameters.js";
-
-const trust_for_new_resource = 4;
-const trust_for_validating_resource = 1;
-const popolous_multiplier = (1/10);
-
+import {
+    logistic_k,
+    logistic_L,
+    logistic_x0,
+    minimum_confidence,
+    only_most_trusted, popolous_multiplier,
+    trust_for_new_resource, trust_for_validating_resource
+} from "./SimulationParameters.js";
 
 // Needs to be rewritten and refactored to work with key-like ids instead of numbers
 async function get_unique_peers(aol){
@@ -192,13 +194,13 @@ async function calculate_trust_of_version_at_time(aol, url, hash, slot){
 
 }
 
-export async function calculate_approximate_timeline_of_url(aol, url, endOfTimelineSlot, withConfidence = false){
+export async function calculate_approximate_timeline_of_url(aol, url, endOfTimelineSlot, withConfidence = false, respectMinimumConfidence = true){
     let websites = await aol.read()
 
     let calculatedTimeline = []
     for (let time = 0; time < endOfTimelineSlot; time++){
 
-        let hashes = websites.get(url)
+        let hashes = await websites.get(url)
 
         let mostTrustedVersionScore = -1;
         let mostTrustedVersionHash = "";
@@ -233,9 +235,15 @@ export async function calculate_approximate_timeline_of_url(aol, url, endOfTimel
             for (const [hash, hashinfo] of hashes) {
                 let trust = await calculate_trust_of_version_at_time(aol, url, hash, time)
                 //console.log(" hash: " + hash + " trust: " + trust)
-                if (trust/totalTrustOfAllVersions > minimum_confidence){
+                if(respectMinimumConfidence){
+                    if (trust/totalTrustOfAllVersions > minimum_confidence){
+                        trustedVersions.push({hash: hash, confidence: trust/totalTrustOfAllVersions})
+                    }
+                }
+                else{
                     trustedVersions.push({hash: hash, confidence: trust/totalTrustOfAllVersions})
                 }
+
             }
             calculatedTimeline.push({timeStart: time, versions: trustedVersions, totalVersions: totalVersions})
         }

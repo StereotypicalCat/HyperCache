@@ -1,15 +1,14 @@
 import {
     calculate_approximate_timeline_of_url,
     calculate_trust_of_version,
-    calculate_trust_of_version_at_time,
     printTrustMatrix,
     printTrustOfEachPeer
 } from "./TrustManager.js";
-import {getWebsiteFaked, GetWebsiteFakedPlaintext} from "./WebsiteManager.js";
+import {getAllCorrectWebsitesForUrl} from "./WebsiteManager.js";
 import {getTime} from "./TimeManager.js";
 import util from 'util';
 import _ from "lodash";
-import {updateValue} from "./SimulationParameters.js";
+import {minimum_confidence, updateValue} from "./SimulationParameters.js";
 
 let getBestAndWorstTrustRatios = async (aol) => {
     console.log("Calculating different trust ratios")
@@ -99,6 +98,7 @@ export let calculateConfusionMatrix = async (aol, endTime) => {
     // Calculates the confusion matrix for the aol
     // This means calculating true-positives, false-positive, true-negative, false-negative.
     // This is done by comparing the aol to the correct list of websites.
+    // Is slot independent
 
     // Get the websites from the aol
     let websites = await aol.read();
@@ -107,21 +107,47 @@ export let calculateConfusionMatrix = async (aol, endTime) => {
     let confusionMatrix = {
         correct_website_trusted: 0,
         correct_website_not_trusted: 0,
-        wrong_website_trusted: 0
+        wrong_website_trusted: 0,
+        wrong_website_not_trusted: 0
     }
 
-    for (const [url, hashes] of websites){
+    for (const [url] of websites){
 
-        let timeline = await calculate_approximate_timeline_of_url(aol, url, endTime, true)
-        for (let slot = 0; slot < timeline.length; slot++){
-            let correctVersion = await getWebsiteFaked(url, false, slot)
+        let timeline = await calculate_approximate_timeline_of_url(aol, url, endTime, true, false)
+
+        // Only unique trusted versions
+        let trustedVersions = timeline.map((timelineObj) => {return timelineObj.versions}).flat().filter(version => version.confidence >= minimum_confidence).map(version => version.hash);
+        trustedVersions = _.uniq(trustedVersions);
+        //console.log("timeline", timeline)
+        let allVersions = timeline.map((timelineObj) => {return timelineObj.versions}).flat().map(version => version.hash);
+        allVersions = _.uniq(allVersions);
+        let correctVersions = await getAllCorrectWebsitesForUrl(url);
+
+        //console.log("trusted versions", trustedVersions)
+        //console.log("correct versions", correctVersions)
+        //console.log("All versions", allVersions)
+
+
+        let correctWebsitesTrusted = trustedVersions.filter((version) => {return correctVersions.includes(version)}).length;
+        let correctWebsitesNotTrusted = correctVersions.filter((version) => {return !trustedVersions.includes(version)}).length;
+        let incorrectWebsitesTrusted = trustedVersions.filter((version) => {return !correctVersions.includes(version)}).length;
+        let incorrectWebsitesNotTrusted = allVersions.length - correctWebsitesTrusted - correctWebsitesNotTrusted - incorrectWebsitesTrusted;
+
+
+
+        confusionMatrix.correct_website_trusted += correctWebsitesTrusted;
+        confusionMatrix.correct_website_not_trusted += correctWebsitesNotTrusted;
+        confusionMatrix.wrong_website_trusted += incorrectWebsitesTrusted;
+        confusionMatrix.wrong_website_not_trusted += incorrectWebsitesNotTrusted;
+
+/*        for (let slot = 0; slot < timeline.length; slot++){
             let noOfVersions = timeline[slot].versions.length;
 
-/*            console.log("======")
+/!*            console.log("======")
             console.log("correct version: " + correctVersion)
             console.log("no of versions: " + noOfVersions)
             console.log("timeline: " + util.inspect(timeline[slot].versions.map(obj => obj.hash), {showHidden: false, depth: null, colors: true}))
-            console.log("======")*/
+            console.log("======")*!/
 
             let containsCorrectVersion = timeline[slot].versions.map(obj => obj.hash).includes(correctVersion);
 
@@ -137,7 +163,7 @@ export let calculateConfusionMatrix = async (aol, endTime) => {
                 confusionMatrix.correct_website_not_trusted++;
                 confusionMatrix.wrong_website_trusted += noOfVersions;
             }
-        }
+        }*/
     }
 
     return confusionMatrix;
@@ -192,39 +218,42 @@ export const testDifferentValuesOfLogisticFunction = async(aol) => {
     let best_overall_x0 = undefined;
     let best_overall_k = undefined;
 
-    for (let logistic_k_to_test = 0.1; logistic_k_to_test < 10; logistic_k_to_test +=1){
-        for(let logistic_x0_to_test = -7; logistic_x0_to_test < 7; logistic_x0_to_test += 1){
-            //console.log("logistic_k: " + logistic_k_to_test + " logistic_x0: " + logistic_x0_to_test)
-            updateValue('logistic_k', logistic_k_to_test);
-            updateValue('logistic_x0', logistic_x0_to_test);
-            //aol = _.cloneDeep(jsonDeepCopy);
-            let ratio = await calculateConfusionMatrix(aolDeepCopy, endTime)
-            //console.log(ratio)
+    for (let min_confidence_to_test = 0.4; min_confidence_to_test <= 0.8; min_confidence_to_test += 0.1){
+        for (let logistic_k_to_test = 4; logistic_k_to_test < 6; logistic_k_to_test +=1){
+            for(let logistic_x0_to_test = -20; logistic_x0_to_test < -5; logistic_x0_to_test += 2.5){
+                //console.log("logistic_k: " + logistic_k_to_test + " logistic_x0: " + logistic_x0_to_test)
+                updateValue('logistic_k', logistic_k_to_test);
+                updateValue('logistic_x0', logistic_x0_to_test);
+                updateValue('minimum_confidence', min_confidence_to_test);
+                //aol = _.cloneDeep(jsonDeepCopy);
+                let ratio = await calculateConfusionMatrix(aolDeepCopy, endTime)
+                //console.log(ratio)
 
-            if (ratio.correct_website_trusted > best_correct_website_trusted.correct_website_trusted){
-                best_correct_website_trusted = ratio;
-                best_correct_website_trusted_x0 = logistic_x0_to_test;
-                best_correct_website_trusted_k = logistic_k_to_test;
-            }
-            if (ratio.correct_website_not_trusted < best_correct_website_not_trusted.correct_website_not_trusted){
-                best_correct_website_not_trusted = ratio;
-                best_correct_website_not_trusted_x0 = logistic_x0_to_test;
-                best_correct_website_not_trusted_k = logistic_k_to_test;
-            }
-            if (ratio.wrong_website_trusted < best_incorrect_website_trusted.wrong_website_trusted){
-                best_incorrect_website_trusted = ratio;
-                best_incorrect_website_trusted_x0 = logistic_x0_to_test;
-                best_incorrect_website_trusted_k = logistic_k_to_test;
-            }
+                if (ratio.correct_website_trusted > best_correct_website_trusted.correct_website_trusted){
+                    best_correct_website_trusted = ratio;
+                    best_correct_website_trusted_x0 = logistic_x0_to_test;
+                    best_correct_website_trusted_k = logistic_k_to_test;
+                }
+                if (ratio.correct_website_not_trusted < best_correct_website_not_trusted.correct_website_not_trusted){
+                    best_correct_website_not_trusted = ratio;
+                    best_correct_website_not_trusted_x0 = logistic_x0_to_test;
+                    best_correct_website_not_trusted_k = logistic_k_to_test;
+                }
+                if (ratio.wrong_website_trusted < best_incorrect_website_trusted.wrong_website_trusted){
+                    best_incorrect_website_trusted = ratio;
+                    best_incorrect_website_trusted_x0 = logistic_x0_to_test;
+                    best_incorrect_website_trusted_k = logistic_k_to_test;
+                }
 
-            let fitness = ratio.correct_website_trusted - ratio.correct_website_not_trusted - ratio.wrong_website_trusted;
-            let best_fitness = best_overall.correct_website_trusted - best_overall.correct_website_not_trusted - best_overall.wrong_website_trusted;
-            if (fitness < best_fitness){
-                best_overall = ratio;
-                best_overall_x0 = logistic_x0_to_test;
-                best_overall_k = logistic_k_to_test;
-            }
+                let fitness = ratio.correct_website_trusted - ratio.correct_website_not_trusted - ratio.wrong_website_trusted;
+                let best_fitness = best_overall.correct_website_trusted - best_overall.correct_website_not_trusted - best_overall.wrong_website_trusted;
+                if (fitness > best_fitness){
+                    best_overall = ratio;
+                    best_overall_x0 = logistic_x0_to_test;
+                    best_overall_k = logistic_k_to_test;
+                }
 
+            }
         }
     }
 

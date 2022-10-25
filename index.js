@@ -13,7 +13,12 @@ import {
     printUsefulStats,
     printWebsiteTimelines, testDifferentValuesOfLogisticFunction
 } from "./TestHelpers.js";
-import {get_requestable_urls, GetWebsiteFakedPlaintext, request_website} from "./WebsiteManager.js";
+import {
+    get_requestable_urls,
+    getAllCorrectWebsitesForUrl,
+    GetWebsiteFakedPlaintext,
+    request_website
+} from "./WebsiteManager.js";
 import {
     amount_of_consistently_malicious_peers,
     amount_of_pure_peers,
@@ -79,7 +84,7 @@ let aol = await startNetworkWithConfig(amount_of_pure_peers, amount_of_consisten
 
 let simulationTimeWithBuffer = max_time + 3
 const opt = {
-    format: 'progress [{bar}] {percentage}% | {value}/{total}',
+    format: 'Running Simulation... [{bar}] {percentage}% | {value}/{total}',
     stopOnComplete: true,
 }
 const simulation_timer = new cliProgress.SingleBar(opt, cliProgress.Presets.shades_classic);
