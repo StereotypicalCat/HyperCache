@@ -8,7 +8,8 @@ import {
 } from "./SimulationParameters.js";
 
 // Needs to be rewritten and refactored to work with key-like ids instead of numbers
-async function get_unique_peers(aol){
+// For the simulation tests, this is fine
+async function get_unique_peers(aol) {
 
     //return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     // return list with numers 0 to 5
@@ -18,29 +19,11 @@ async function get_unique_peers(aol){
     //console.log("Total number of peers: ", numberOfPeers)
 
     return Array.from(Array(numberOfPeers).keys());
-
-
-    // uncomment if switching from linear peer ids to
-    /*let {versions, validations} = await aol.read();
-    // Count number of unique peers
-    let uniquePeers = [];
-    for (let i = 0; i < versions.length; i++) {
-        if (!uniquePeers.includes(versions[i].peerId)){
-            uniquePeers.push(versions[i].peerId)
-        }
-    }
-    for (let i = 0; i < validations.length; i++) {
-        if (!uniquePeers.includes(validations[i].peerId)){
-            uniquePeers.push(validations[i].peerId)
-        }
-    }*/
-
-    return uniquePeers;
 }
 
-async function calculate_user_trust_of_user(aol, peerIdSource, peerIdTarget){
+async function calculate_user_trust_of_user(aol, peerIdSource, peerIdTarget) {
 
-    if (peerIdSource === peerIdTarget){
+    if (peerIdSource === peerIdTarget) {
         return Infinity;
     }
 
@@ -51,13 +34,13 @@ async function calculate_user_trust_of_user(aol, peerIdSource, peerIdTarget){
 
     // loop through all websites
     for (let [url, versions] of websites) {
-        for (let [hash, versionInfo] of versions){
+        for (let [hash, versionInfo] of versions) {
 
             // if the source peer placed the version
-            if (versionInfo.peerId === peerIdSource){
+            if (versionInfo.peerId === peerIdSource) {
                 // if the target peer validated the version
-                for(let i = 0; i < versionInfo.validations.length; i++){
-                    if (versionInfo.validations[i].peerId === peerIdTarget){
+                for (let i = 0; i < versionInfo.validations.length; i++) {
+                    if (versionInfo.validations[i].peerId === peerIdTarget) {
                         trust += trust_for_validating_resource;
                     }
                 }
@@ -76,47 +59,35 @@ async function calculate_user_trust_of_user(aol, peerIdSource, peerIdTarget){
         }
     }
 
-        // For each version the target peer has added, check if the source peer has validated it
-
-
-        // For each version the source peer has added, check if the target peer has validated it
-
     //console.log("Peer " + peerIdSource + " has trust " + trust + " for peer " + peerIdTarget);
 
     return trust;
 }
 
-async function calculate_full_trust_of_user(aol, peerId){
+async function calculate_full_trust_of_user(aol, peerId) {
     let trustMatrix = await calculate_trust_matrix(aol);
 
     let userTrust = 0;
 
     for (let i = 0; i < trustMatrix.length; i++) {
-        if (i === peerId){
+        if (i === peerId) {
             continue;
         }
-        if (isNaN(trustMatrix[i][peerId])){
+        if (isNaN(trustMatrix[i][peerId])) {
             console.log("ful trust of user: NaN while calculating trust of " + peerId + " from " + i)
             console.table(trustMatrix)
         }
 
         userTrust += trustMatrix[i][peerId];
     }
-
-    // TODO: THE PROBLEM IS SOMETHING RIGHT HERE
-    // THE PROBLEM IS WHEN PEERS CHURN...UNFORTUNETLY.
-    // !==============
-    // !=====================
-    // !===============
     return userTrust;
 }
 
-async function calculate_trust_of_version(aol, url, hash){
+async function calculate_trust_of_version(aol, url, hash) {
     let websites = await aol.read();
 
-
     let websiteExistsInAOL = websites.has(url) && websites.get(url).has(hash);
-    if (!websiteExistsInAOL){
+    if (!websiteExistsInAOL) {
         console.log("couldn't find either url or hash")
         return 0;
     }
@@ -138,7 +109,7 @@ async function calculate_trust_of_version(aol, url, hash){
 
 }
 
-function inverseLogsticFunction(x){
+function inverseLogsticFunction(x) {
 
     // Curves maximum value
     const L = logistic_L;
@@ -150,16 +121,16 @@ function inverseLogsticFunction(x){
     // Basically controls the bias of future versions vs previous versions
     let x0 = logistic_x0;
 
-    let logisticPart = (L/(1+Math.exp((-k)*(x-x0))));
+    let logisticPart = (L / (1 + Math.exp((-k) * (x - x0))));
 
     return 1 - logisticPart;
 }
 
-async function calculate_trust_of_version_at_time(aol, url, hash, slot){
+async function calculate_trust_of_version_at_time(aol, url, hash, slot) {
     let websites = await aol.read();
 
     let websiteExistsInAOL = websites.has(url) && websites.get(url).has(hash);
-    if (!websiteExistsInAOL){
+    if (!websiteExistsInAOL) {
         console.log("couldn't find either url or hash")
         return 0;
     }
@@ -194,11 +165,11 @@ async function calculate_trust_of_version_at_time(aol, url, hash, slot){
 
 }
 
-export async function calculate_approximate_timeline_of_url(aol, url, endOfTimelineSlot, withConfidence = false, respectMinimumConfidence = true){
+export async function calculate_approximate_timeline_of_url(aol, url, endOfTimelineSlot, withConfidence = false, respectMinimumConfidence = true) {
     let websites = await aol.read()
 
     let calculatedTimeline = []
-    for (let time = 0; time < endOfTimelineSlot; time++){
+    for (let time = 0; time < endOfTimelineSlot; time++) {
 
         let hashes = await websites.get(url)
 
@@ -212,7 +183,7 @@ export async function calculate_approximate_timeline_of_url(aol, url, endOfTimel
             //console.log(" hash: " + hash + " trust: " + trust)
             totalTrustOfAllVersions += trust;
             totalVersions += 1;
-            if (trust > mostTrustedVersionScore){
+            if (trust > mostTrustedVersionScore) {
                 mostTrustedVersionScore = trust;
                 mostTrustedVersionHash = hash;
             }
@@ -220,28 +191,31 @@ export async function calculate_approximate_timeline_of_url(aol, url, endOfTimel
 
         ///console.log("Most trusted version at time " + time + " is " + mostTrustedVersionHash + " with score " + mostTrustedVersionScore)
 
-        if (only_most_trusted){
+        if (only_most_trusted) {
             //console.log("CalculatedTimeline: ", calculatedTimeline)
-            if (withConfidence === false && (calculatedTimeline.length === 0 || calculatedTimeline[calculatedTimeline.length - 1].hash !== mostTrustedVersionHash)){
+            if (withConfidence === false && (calculatedTimeline.length === 0 || calculatedTimeline[calculatedTimeline.length - 1].hash !== mostTrustedVersionHash)) {
                 calculatedTimeline.push({timeStart: time, hash: mostTrustedVersionHash})
-            }
-            else if (withConfidence === true){
+            } else if (withConfidence === true) {
                 let confidence = mostTrustedVersionScore / totalTrustOfAllVersions;
-                calculatedTimeline.push({timeStart: time, hash: mostTrustedVersionHash, confidence: confidence, totalVersions: totalVersions})
+                calculatedTimeline.push({
+                    timeStart: time,
+                    hash: mostTrustedVersionHash,
+                    confidence: confidence,
+                    totalVersions: totalVersions
+                })
             }
-        }else{
+        } else {
             // run through all versions again and calculate their confidence
             let trustedVersions = []
             for (const [hash, hashinfo] of hashes) {
                 let trust = await calculate_trust_of_version_at_time(aol, url, hash, time)
                 //console.log(" hash: " + hash + " trust: " + trust)
-                if(respectMinimumConfidence){
-                    if (trust/totalTrustOfAllVersions > minimum_confidence){
-                        trustedVersions.push({hash: hash, confidence: trust/totalTrustOfAllVersions})
+                if (respectMinimumConfidence) {
+                    if (trust / totalTrustOfAllVersions > minimum_confidence) {
+                        trustedVersions.push({hash: hash, confidence: trust / totalTrustOfAllVersions})
                     }
-                }
-                else{
-                    trustedVersions.push({hash: hash, confidence: trust/totalTrustOfAllVersions})
+                } else {
+                    trustedVersions.push({hash: hash, confidence: trust / totalTrustOfAllVersions})
                 }
 
             }
@@ -259,10 +233,10 @@ export async function calculate_approximate_timeline_of_url(aol, url, endOfTimel
 let latestTrustMatrix;
 let latestVersionLength;
 
-async function calculate_trust_matrix(aol){
+async function calculate_trust_matrix(aol) {
     let logHistoryLength = await aol.getLogLength();
 
-    if (latestTrustMatrix !== undefined && latestVersionLength === logHistoryLength){
+    if (latestTrustMatrix !== undefined && latestVersionLength === logHistoryLength) {
         return latestTrustMatrix;
     }
 
@@ -276,7 +250,7 @@ async function calculate_trust_matrix(aol){
         trustMatrix.push([]);
         for (let j = 0; j < uniquePeers.length; j++) {
             let test = await calculate_user_trust_of_user(aol, i, j);
-            if (isNaN(test)){
+            if (isNaN(test)) {
                 console.log("NaN While calculating trust of " + i + " and " + j)
             }
             trustMatrix[i].push(test);
@@ -288,13 +262,13 @@ async function calculate_trust_matrix(aol){
 
 }
 
-async function printTrustMatrix(aol){
+async function printTrustMatrix(aol) {
     let trustMatrix = await calculate_trust_matrix(aol);
 
     console.table(trustMatrix)
 }
 
-async function printTrustOfEachPeer(aol){
+async function printTrustOfEachPeer(aol) {
     let uniquePeers = await get_unique_peers(aol);
 
     for (let i = 0; i < uniquePeers.length; i++) {
@@ -302,4 +276,10 @@ async function printTrustOfEachPeer(aol){
     }
 }
 
-export {calculate_user_trust_of_user, printTrustMatrix, printTrustOfEachPeer, calculate_trust_of_version, calculate_trust_of_version_at_time}
+export {
+    calculate_user_trust_of_user,
+    printTrustMatrix,
+    printTrustOfEachPeer,
+    calculate_trust_of_version,
+    calculate_trust_of_version_at_time
+}

@@ -10,45 +10,6 @@ import util from 'util';
 import _ from "lodash";
 import {minimum_confidence, updateValue} from "./SimulationParameters.js";
 
-let getBestAndWorstTrustRatios = async (aol) => {
-    console.log("Calculating different trust ratios")
-    let websites = await aol.read()
-    // for each url in the websites, print each hash and the trust of that hash
-
-    let bestRatio = -Infinity;
-    let worstRatio = Infinity;
-
-    for (const [url, hashes] of websites){
-        //console.log("Calculating new url")
-
-        let badTrust = -1;
-        let goodTrust = -1;
-
-        for (const [hash, hashinfo] of hashes) {
-            let trust = await calculate_trust_of_version(aol, url, hash)
-
-            if (hash.includes("wrongHash")){
-                badTrust = trust;
-            }
-            if (hash.includes("correctHash")){
-                goodTrust = trust;
-            }
-        }
-
-        let trustRatio = goodTrust / badTrust;
-
-        if (trustRatio > bestRatio){
-            bestRatio = trustRatio;
-        }
-        if (trustRatio < worstRatio){
-            worstRatio = trustRatio;
-        }
-
-    }
-
-    return {bestratio: bestRatio, worstratio: worstRatio};
-
-}
 
 let printUsefulStats = async (aol) => {
     //console.log(await aol.read());
@@ -139,31 +100,6 @@ export let calculateConfusionMatrix = async (aol, endTime) => {
         confusionMatrix.correct_website_not_trusted += correctWebsitesNotTrusted;
         confusionMatrix.wrong_website_trusted += incorrectWebsitesTrusted;
         confusionMatrix.wrong_website_not_trusted += incorrectWebsitesNotTrusted;
-
-/*        for (let slot = 0; slot < timeline.length; slot++){
-            let noOfVersions = timeline[slot].versions.length;
-
-/!*            console.log("======")
-            console.log("correct version: " + correctVersion)
-            console.log("no of versions: " + noOfVersions)
-            console.log("timeline: " + util.inspect(timeline[slot].versions.map(obj => obj.hash), {showHidden: false, depth: null, colors: true}))
-            console.log("======")*!/
-
-            let containsCorrectVersion = timeline[slot].versions.map(obj => obj.hash).includes(correctVersion);
-
-
-            if (containsCorrectVersion){
-                confusionMatrix.correct_website_trusted++;
-                let incorrectTrusted = Math.max(noOfVersions - 1, 0);
-                confusionMatrix.wrong_website_trusted += incorrectTrusted;
-            }else{
-                //console.log("==============")
-                //console.log("Website at slot " + slot + " doesnt trust real version, which is ", correctVersion);
-                //console.log("Trusts these instead ", timeline[slot].versions.map(obj => obj.hash));
-                confusionMatrix.correct_website_not_trusted++;
-                confusionMatrix.wrong_website_trusted += noOfVersions;
-            }
-        }*/
     }
 
     return confusionMatrix;
@@ -224,33 +160,6 @@ export let calculateTemporalCorrectnessStats = async (aol, endTime) => {
 
 
         }
-
-
-
-        /*        for (let slot = 0; slot < timeline.length; slot++){
-                    let noOfVersions = timeline[slot].versions.length;
-
-        /!*            console.log("======")
-                    console.log("correct version: " + correctVersion)
-                    console.log("no of versions: " + noOfVersions)
-                    console.log("timeline: " + util.inspect(timeline[slot].versions.map(obj => obj.hash), {showHidden: false, depth: null, colors: true}))
-                    console.log("======")*!/
-
-                    let containsCorrectVersion = timeline[slot].versions.map(obj => obj.hash).includes(correctVersion);
-
-
-                    if (containsCorrectVersion){
-                        confusionMatrix.correct_website_trusted++;
-                        let incorrectTrusted = Math.max(noOfVersions - 1, 0);
-                        confusionMatrix.wrong_website_trusted += incorrectTrusted;
-                    }else{
-                        //console.log("==============")
-                        //console.log("Website at slot " + slot + " doesnt trust real version, which is ", correctVersion);
-                        //console.log("Trusts these instead ", timeline[slot].versions.map(obj => obj.hash));
-                        confusionMatrix.correct_website_not_trusted++;
-                        confusionMatrix.wrong_website_trusted += noOfVersions;
-                    }
-                }*/
     }
 
     return temporalCorrectnessMatrix;
@@ -333,4 +242,4 @@ export const testDifferentValuesOfLogisticFunction = async(aol) => {
         " logistic_x0: " + best_overall_x0)
 }
 
-export {getBestAndWorstTrustRatios, printUsefulStats}
+export {printUsefulStats}

@@ -230,19 +230,6 @@ let request_website = async (url) => {
 }
 
 
-/*
-let test = async () => {
-    setTimeout(async () => {
-    let res = await request_website('site1');
-        console.log(res);
-        await test();
-    }, 800)
-}
-*/
-
-//await test();
-
-
 export {request_website, get_requestable_urls, GetWebsiteFakedPlaintext, getWebsiteFaked}
 
 
