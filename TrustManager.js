@@ -6,6 +6,7 @@ import {
     only_most_trusted, popolous_multiplier,
     trust_for_new_resource, trust_for_validating_resource
 } from "./SimulationParameters.js";
+import {getTemporalScaleFactor} from "./TemporalCorrectnessFunctions.js";
 
 // Needs to be rewritten and refactored to work with key-like ids instead of numbers
 // For the simulation tests, this is fine
@@ -109,23 +110,6 @@ async function calculate_trust_of_version(aol, url, hash) {
 
 }
 
-function inverseLogsticFunction(x) {
-
-    // Curves maximum value
-    const L = logistic_L;
-
-    // The logistic growth rate of the curve
-    const k = logistic_k;
-
-    // The x value of the sigmoid's midpoint on the x axis
-    // Basically controls the bias of future versions vs previous versions
-    let x0 = logistic_x0;
-
-    let logisticPart = (L / (1 + Math.exp((-k) * (x - x0))));
-
-    return 1 - logisticPart;
-}
-
 async function calculate_trust_of_version_at_time(aol, url, hash, slot) {
     let websites = await aol.read();
 
@@ -136,8 +120,9 @@ async function calculate_trust_of_version_at_time(aol, url, hash, slot) {
     }
 
     let trust = await calculate_full_trust_of_user(aol, websites.get(url).get(hash).peerId);
-    let timeSinceInitialSubmission = Math.abs(websites.get(url).get(hash).time - slot);
-    let initialUserScaleValue = inverseLogsticFunction(timeSinceInitialSubmission)
+    let timeSinceInitialSubmission = websites.get(url).get(hash).time - slot;
+
+    let initialUserScaleValue = getTemporalScaleFactor(timeSinceInitialSubmission)
     trust *= initialUserScaleValue;
 
 
@@ -148,11 +133,11 @@ async function calculate_trust_of_version_at_time(aol, url, hash, slot) {
         let user_trust = await calculate_full_trust_of_user(aol, websites.get(url).get(hash).validations[i].peerId);
 
         // Scale the trust accumulated with the time since the validation
-        let timeSinceValidation = Math.abs(websites.get(url).get(hash).validations[i].time - slot)
+        let timeSinceValidation = websites.get(url).get(hash).validations[i].time - slot
         //console.log(websites.get(url).get(hash).validations[i].time)
         //console.log(slot)
         //console.log(timeSinceValidation)
-        let scaleValue = inverseLogsticFunction(timeSinceValidation)
+        let scaleValue = getTemporalScaleFactor(timeSinceValidation)
         //console.log("Scale value: ", scaleValue, "Time since validation:", timeSinceValidation)
 
         trust += user_trust * scaleValue;
