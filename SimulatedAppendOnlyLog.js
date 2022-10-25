@@ -11,6 +11,34 @@ class AppendOnlyLog{
         this.lock = new Mutex();
     }
 
+    async getDataForWorker(){
+        const release = await this.lock.acquire();
+        let returnData;
+        try {
+            returnData = {
+                websites: this.websites,
+                peersInSystem: this.peersInSystem,
+            };
+        }
+        finally {
+            release();
+        }
+        return returnData;
+    }
+
+    // Incomplete As LogHistory will be missing but what can ya do
+    async updateAOL(websites, peersInSystem){
+        const release = await this.lock.acquire();
+
+        try{
+            this.websites = websites;
+            this.peersInSystem = peersInSystem;
+        }
+        finally {
+            release();
+        }
+    }
+
     async getNumberOfPeers(){
         const release = await this.lock.acquire();
         try {

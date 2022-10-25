@@ -17,7 +17,7 @@ let calculatePostStats = async (aol) => {
     console.log("calculating post stats...")
 
     let endTime = getTime();
-    let testHelper = new TestHelpers(defaultTrustParameters, aol, endTime, WebsiteManagerSimulator);
+    let testHelper = new TestHelpers(defaultTrustParameters, aol, endTime, WebsiteManagerSimulator, defaultSimulationParameters);
 
 
     //await printUsefulStats(aol);

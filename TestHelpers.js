@@ -3,10 +3,20 @@ import util from 'util';
 import _ from "lodash";
 import cliProgress from "cli-progress";
 import {TrustManager} from "./TrustManager.js";
+import {Mutex} from "async-mutex";
+import {Worker} from "worker_threads";
 
 export class TestHelpers {
-    constructor(trust_parameters, aol, endTime, websiteManager) {
+
+    waitforme(milisec) {
+        return new Promise(resolve => {
+            setTimeout(() => { resolve('') }, milisec);
+        })
+    }
+
+    constructor(trust_parameters, aol, endTime, websiteManager, simulation_parameters) {
         this.trust_parameters = trust_parameters;
+        this.simulation_paramerets = simulation_parameters;
         this.websiteManager = websiteManager;
         this.trust_manager = new TrustManager(trust_parameters, aol);
         this.aol = aol;
@@ -174,10 +184,15 @@ export class TestHelpers {
 
     testDifferentValuesOfLogisticFunction = async(endTime) => {
 
+
         let confusionMatrixConfigStats = [];
         let confusionMatrixNoWrongTrustedStats = [];
         let temporalCorrectnessConfigStats = [];
         let bestTotalConfigStats = [];
+
+        let unfinishedThreads = 0;
+        const unfinishedThreadsMutex = new Mutex();
+        const statisticsArrayMutex = new Mutex();
 
 
         /*    const minconfidence = testDiffernetValuesTimer.create(0.8, 0.4);
@@ -191,65 +206,85 @@ export class TestHelpers {
                         for (let trust_for_validating_resource_to_test = 1; trust_for_validating_resource_to_test < 10; trust_for_validating_resource_to_test += 1) {
                             for (let populous_multiplier_to_test = 0; populous_multiplier_to_test < 0.5; populous_multiplier_to_test += 0.05) {
 
-                                let calculatedConfusionMatrix = await this.calculateConfusionMatrix();
-                                let calculatedTemporalCorrectnessMatrix = await this.calculateTemporalCorrectnessStats(this.aol, endTime);
-
-                                let confusion_matrix_total_versions = calculatedConfusionMatrix.correct_website_trusted + calculatedConfusionMatrix.correct_website_not_trusted + calculatedConfusionMatrix.wrong_website_trusted + calculatedConfusionMatrix.wrong_website_not_trusted;
-                                let confusion_matrix_correct_guesses = calculatedConfusionMatrix.correct_website_trusted + calculatedConfusionMatrix.wrong_website_not_trusted;
-                                let confusion_matrix_score = confusion_matrix_correct_guesses / confusion_matrix_total_versions;
-                                confusionMatrixConfigStats.push({
-                                    score: confusion_matrix_score,
-                                    min_confidence: min_confidence_to_test,
-                                    logistic_k: logistic_k_to_test,
-                                    logistic_x0: logistic_x0_to_test,
-                                    trust_for_new_resources: trust_for_new_resources_to_test,
-                                    trust_for_validating_resource: trust_for_validating_resource_to_test,
-                                    populous_multiplier: populous_multiplier_to_test,
-                                    ...calculatedConfusionMatrix
-                                })
-
-                                let temporal_correctness_score = calculatedTemporalCorrectnessMatrix.url_correct_slot / calculatedTemporalCorrectnessMatrix.total_slots;
-                                temporalCorrectnessConfigStats.push({
-                                    score: temporal_correctness_score,
-                                    min_confidence: min_confidence_to_test,
-                                    logistic_k: logistic_k_to_test,
-                                    logistic_x0: logistic_x0_to_test,
-                                    trust_for_new_resources: trust_for_new_resources_to_test,
-                                    trust_for_validating_resource: trust_for_validating_resource_to_test,
-                                    populous_multiplier: populous_multiplier_to_test,
-                                    ...calculatedTemporalCorrectnessMatrix
-                                });
-
-                                if (calculatedConfusionMatrix.wrong_website_trusted === 0){
-                                    confusionMatrixNoWrongTrustedStats.push({
-                                        score: confusion_matrix_score,
-                                        min_confidence: min_confidence_to_test,
-                                        logistic_k: logistic_k_to_test,
-                                        logistic_x0: logistic_x0_to_test,
-                                        trust_for_new_resources: trust_for_new_resources_to_test,
-                                        trust_for_validating_resource: trust_for_validating_resource_to_test,
-                                        populous_multiplier: populous_multiplier_to_test,
-                                        ...calculatedConfusionMatrix
-                                    })
+                                let shouldCreateMoreThreads = false
+                                while (!shouldCreateMoreThreads) {
+                                    const release = await unfinishedThreadsMutex.acquire();
+                                    try {
+                                        if (unfinishedThreads < 2){
+                                            shouldCreateMoreThreads = true;
+                                        }
+                                    }
+                                    finally {
+                                        release();
+                                    }
+                                    await this.waitforme(100);
                                 }
 
-                                let total_score = (confusion_matrix_score + temporal_correctness_score)/2;
-                                bestTotalConfigStats.push({
-                                    score: total_score,
-                                    min_confidence: min_confidence_to_test,
-                                    logistic_k: logistic_k_to_test,
-                                    logistic_x0: logistic_x0_to_test,
-                                    trust_for_new_resources: trust_for_new_resources_to_test,
-                                    trust_for_validating_resource: trust_for_validating_resource_to_test,
-                                    populous_multiplier: populous_multiplier_to_test,
-                                    ...calculatedConfusionMatrix,
+
+                                let newThreadParamteres = _.cloneDeep(this.trust_parameters);
+                                newThreadParamteres.minimum_confidence = min_confidence_to_test;
+                                newThreadParamteres.logistic_k = logistic_k_to_test;
+                                newThreadParamteres.logistic_x0 = logistic_x0_to_test;
+                                newThreadParamteres.trust_for_new_resources = trust_for_new_resources_to_test;
+                                newThreadParamteres.trust_for_validating_resource = trust_for_validating_resource_to_test;
+                                newThreadParamteres.populous_multiplier = populous_multiplier_to_test;
+
+                                // Cant deep dopy classes
+                                let info = await this.aol.getDataForWorker();
+
+                                const worker = new Worker('./TestHelpers_Worker.js', {workerData:
+                                        {
+                                    trust_parameters: newThreadParamteres,
+                                            simulation_parameters: this.simulation_paramerets,
+                                            websites: await this.websiteManager.GetWebsiteFakedPlaintext(),
+                                    endTime: endTime,
+                                            websitesAOL: info.websites,
+                                            peersInSystem: info.peersInSystem
+                                }})
+
+                                worker.once("message", async result => {
+                                    const release = await statisticsArrayMutex.acquire();
+                                    try {
+                                        confusionMatrixConfigStats.push(result.confusionMatrixConfig);
+                                        confusionMatrixNoWrongTrustedStats.push(result.confusionMatrixNoWrongTrusted);
+                                        temporalCorrectnessConfigStats.push(result.temporalCorrectnessConfig);
+                                        bestTotalConfigStats.push(result.bestTotalConfig);
+                                    }
+                                    finally {
+                                        release();
+                                    }
                                 });
+
+                                worker.on("exit", async exitCode => {
+                                    const release = await unfinishedThreadsMutex.acquire();
+                                    try {
+                                        unfinishedThreads--;
+                                    }
+                                    finally {
+                                        release();
+                                    }
+                                })
 
                             }
                         }
                     }
                 }
             }
+        }
+
+
+        let allThreadsFinished = false;
+        while (!allThreadsFinished){
+            const release = await unfinishedThreadsMutex.acquire();
+            try {
+                if (unfinishedThreads === 0){
+                    allThreadsFinished = true;
+                }
+            }
+            finally {
+                release();
+            }
+            await this.waitforme(1000);
         }
 
         console.log("Sorting Results")
@@ -268,4 +303,5 @@ export class TestHelpers {
         }
 
     }
+
 }

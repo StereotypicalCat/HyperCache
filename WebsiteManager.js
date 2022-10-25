@@ -129,6 +129,10 @@ export class WebsiteManager{
         throw err;
     }
 
+    SetWebsiteFakedPlaintext = async (fakedPlaintextWebsites) => {
+        this.fakedPlaintextWebsites = fakedPlaintextWebsites;
+    }
+
     GetWebsiteFakedPlaintext = async () => {
 
         if (this.fakedPlaintextWebsites !== null){
