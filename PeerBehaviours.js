@@ -1,11 +1,5 @@
 import {convertPlaintextToHashTree} from "./TreeManager.js";
 import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
-import {
-    chance_a_peer_churns,
-    chance_of_sometimes_being_malicious,
-    max_peer_time_before_first_request, min_peer_time_before_first_request,
-    peer_timeout
-} from "./SimulationParameters.js";
 import {getTime} from "./TimeManager.js";
 import {Mutex} from "async-mutex";
 
@@ -31,168 +25,180 @@ let maliciouswebsites = [
     '<!DOCTYPE html><html><body><p>Alice says you look absolutely terrible</p></body></html>'
 ]
 */
-// https://javascript.info/task/shuffle
-function shuffle(array) {
-    array.sort(() => Math.random() - 0.5);
-}
 
-/*function delay(time) {
-    return new Promise(resolve => setTimeout(resolve, time));
-}*/
 
-let doP2PProtocol = async (document, url, aol, peerNum) => {
-    let hashTree = await convertPlaintextToHashTree(document);
-
-    let wasSuccess = await aol.tryAddNewVersion(hashTree, peerNum, url)
-
-    if (!wasSuccess){
-        await aol.tryAddNewValidation(hashTree, peerNum, url)
-    }
-}
-
-let doP2PProtocolWithPlaintext = async (plaintext, url, aol, peerNum, time) => {
-
-    let hashTree = {
-        value: plaintext
+export class PeerBehaviours {
+    constructor(simulation_parameters, website_manager) {
+        this.website_manager = website_manager;
+        this.simulation_parameters = simulation_parameters;
+        this.shouldStopPeersMutex = new Mutex();
+        this.shouldStopPeers = false;
+        this.peerNumberMutex = new Mutex();
+        this.nextPeerNum = -1;
     }
 
-    let wasSuccess = await aol.tryAddNewVersion(hashTree, peerNum, url, time)
-    if (!wasSuccess){
-        await aol.tryAddNewValidation(hashTree, peerNum, url, time)
+
+    // https://javascript.info/task/shuffle
+    shuffle(array) {
+        array.sort(() => Math.random() - 0.5);
     }
-}
 
-// Always returns the "correct url"
-let purePeerStrategy = async (peerNum, aol, urls, requester) => {
-    for (const url of urls){
-        //console.log("Peer " + peerNum + " requesting " + url);
-        //console.log("new url: " + url)
-        let response = await requester(url);
+    /*function delay(time) {
+        return new Promise(resolve => setTimeout(resolve, time));
+    }*/
 
-        let timestamp = getTime();
-        await doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
+    doP2PProtocol = async (document, url, aol, peerNum) => {
+        let hashTree = await convertPlaintextToHashTree(document);
+
+        let wasSuccess = await aol.tryAddNewVersion(hashTree, peerNum, url)
+
+        if (!wasSuccess){
+            await aol.tryAddNewValidation(hashTree, peerNum, url)
+        }
     }
-}
 
-let consistentlyMaliciousPeerStrategy = async (peerNum, aol, urls, requester) => {
-    for (const url of urls){
-        //console.log("Peer " + peerNum + " requesting " + url);
-        //console.log("new url: " + url)
+    doP2PProtocolWithPlaintext = async (plaintext, url, aol, peerNum, time) => {
 
-        let response = url + "_malicious"
+        let hashTree = {
+            value: plaintext
+        }
 
-        let timestamp = getTime();
-        await doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
+        let wasSuccess = await aol.tryAddNewVersion(hashTree, peerNum, url, time)
+        if (!wasSuccess){
+            await aol.tryAddNewValidation(hashTree, peerNum, url, time)
+        }
     }
-}
+
+
+    startPeer = async (peerNum, aol, urls, requester, documentChangeStrategy) => {
+        const delayToWait = Math.max(Math.random() * this.simulation_parameters.max_peer_time_before_first_request * 1000, this.simulation_parameters.min_peer_time_before_first_request * 1000);
+
+        const thisPeersUrls = [...urls]
+        this.shuffle(thisPeersUrls)
+
+        let currentPeerNum = peerNum;
+
+        let mainLoop = async () => {
+
+            if (await this.shouldStopPeersCheck()){
+                return;
+            }
+
+            // print the second mark when the peer starts
+            //console.log("Pure Peer " + peerNum + " starting again");
+
+            await documentChangeStrategy(currentPeerNum, aol, thisPeersUrls, requester)
+
+            if (!(this.simulation_parameters.chance_a_peer_churns === 0) && Math.random() < this.simulation_parameters.chance_a_peer_churns){
+                this.shuffle(thisPeersUrls)
+                currentPeerNum = await this.getNewPeerNumber();
+                //console.log("Peer " + peerNum + " has churned to " + currentPeerNum);
+            }
+
+            setTimeout(mainLoop, this.simulation_parameters.peer_timeout * 1000);
+        }
+        setTimeout(mainLoop, delayToWait)
+    }
+
+    purePeerStrategy = async (peerNum, aol, urls, requester, simulation_params) => {
+        for (const url of urls){
+            //console.log("Peer " + peerNum + " requesting " + url);
+            //console.log("new url: " + url)
+            let response = await requester(url);
+
+            let timestamp = getTime();
+            await this.doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
+        }
+    }
+
+    consistentlyMaliciousPeerStrategy = async (peerNum, aol, urls, requester, simulation_params) => {
+        for (const url of urls){
+            //console.log("Peer " + peerNum + " requesting " + url);
+            //console.log("new url: " + url)
+
+            let response = url + "_malicious"
+
+            let timestamp = getTime();
+            await this.doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
+        }
+    }
 
 // Might be malicious, but might also sometimes just get served a different url such as a regional different page but with the same url.
-let sometimesMaliciousPeerStrategy = async (peerNum, aol, urls, requester) => {
-    for (const url of urls){
+    sometimesMaliciousPeerStrategy = async (peerNum, aol, urls, requester) => {
+        for (const url of urls){
 
-        let doc;
-        if (Math.random() <= chance_of_sometimes_being_malicious){
-            doc = url + "_malicious";
-        }
-        else{
-            doc = await requester(url);
-        }
+            let doc;
+            if (Math.random() <= this.simulation_parameters.chance_of_sometimes_being_malicious){
+                doc = url + "_malicious";
+            }
+            else{
+                doc = await requester(url);
+            }
 
-        let timestamp = getTime();
-        await doP2PProtocolWithPlaintext(doc, url, aol, peerNum, timestamp)
+            let timestamp = getTime();
+            await this.doP2PProtocolWithPlaintext(doc, url, aol, peerNum, timestamp)
+        }
     }
-}
-let startPeer = async (peerNum, aol, urls, requester, documentChangeStrategy) => {
-    const delayToWait = Math.max(Math.random() * max_peer_time_before_first_request * 1000, min_peer_time_before_first_request * 1000);
 
-    const thisPeersUrls = [...urls]
-    shuffle(thisPeersUrls)
+    startNetworkWithConfig = async () => {
+        const aol = new AppendOnlyLog(this.simulation_parameters);
 
-    let currentPeerNum = peerNum;
-
-    let mainLoop = async () => {
-
-        if (await shouldStopPeersCheck()){
-            return;
+        for (let i = 0; i < this.simulation_parameters.amount_of_pure_peers; i++) {
+            this.startPeer(i, aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.purePeerStrategy, this.simulation_parameters)
         }
-
-        // print the second mark when the peer starts
-        //console.log("Pure Peer " + peerNum + " starting again");
-
-        await documentChangeStrategy(currentPeerNum, aol, thisPeersUrls, requester)
-
-        if (!(chance_a_peer_churns === 0) && Math.random() < chance_a_peer_churns){
-            shuffle(thisPeersUrls)
-            currentPeerNum = await getNewPeerNumber();
-            //console.log("Peer " + peerNum + " has churned to " + currentPeerNum);
+        for (let i = this.simulation_parameters.amount_of_pure_peers; i < this.simulation_parameters.amount_of_pure_peers + this.simulation_parameters.amount_of_consistently_malicious_peers; i++) {
+            this.startPeer(i, aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.consistentlyMaliciousPeerStrategy, this.simulation_parameters)
+        }
+        for (let i = this.simulation_parameters.amount_of_pure_peers + this.simulation_parameters.amount_of_consistently_malicious_peers; i < this.simulation_parameters.amount_of_pure_peers + this.simulation_parameters.amount_of_consistently_malicious_peers + this.simulation_parameters.amount_of_sometimes_malicious_peers; i++) {
+            this.startPeer(i, aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.sometimesMaliciousPeerStrategy, this.simulation_parameters)
         }
 
-        setTimeout(mainLoop, peer_timeout * 1000);
-    }
-    setTimeout(mainLoop, delayToWait)
-}
+        await this.setPeerNumberStart(this.simulation_parameters.amount_of_pure_peers + this.simulation_parameters.amount_of_consistently_malicious_peers + this.simulation_parameters.amount_of_consistently_malicious_peers)
+        setTimeout(() => {
+            this.stopPeers();
+        }, this.simulation_parameters.max_time * 1000)
 
-
-
-export let startNetworkWithConfig = async (purePeers, ConsistentMalicious, SometimesMalicious, urlsToRequest, requestMethod, endTime) => {
-    const aol = new AppendOnlyLog();
-
-    for (let i = 0; i < purePeers; i++) {
-        startPeer(i, aol, urlsToRequest, requestMethod, purePeerStrategy)
-    }
-    for (let i = purePeers; i < purePeers + ConsistentMalicious; i++) {
-        startPeer(i, aol, urlsToRequest, requestMethod, consistentlyMaliciousPeerStrategy)
-    }
-    for (let i = purePeers + ConsistentMalicious; i < purePeers + ConsistentMalicious + SometimesMalicious; i++) {
-        startPeer(i, aol, urlsToRequest, requestMethod, sometimesMaliciousPeerStrategy)
+        return aol;
     }
 
-    await setPeerNumberStart(purePeers + ConsistentMalicious + SometimesMalicious)
-    setTimeout(() => {
-        stopPeers();
-    }, endTime * 1000)
-
-    return aol;
-}
-
-const shouldStopPeersMutex = new Mutex();
-let shouldStopPeers = false;
-let stopPeers = async () => {
-    const release = await shouldStopPeersMutex.acquire();
-    shouldStopPeers = true;
-    release();
-}
-let shouldStopPeersCheck = async () => {
-    const release = await shouldStopPeersMutex.acquire();
-    let toReturn = shouldStopPeers;
-    release();
-    return toReturn;
-}
-
-
-const peerNumberMutex = new Mutex();
-let nextPeerNum = -1;
-let setPeerNumberStart = async (peerNum) => {
-    const release = await peerNumberMutex.acquire();
-    try {
-        nextPeerNum = peerNum;
-    }
-    finally {
+    stopPeers = async () => {
+        const release = await this.shouldStopPeersMutex.acquire();
+        this.shouldStopPeers = true;
         release();
     }
-}
-let getNewPeerNumber = async () => {
-    const release = await peerNumberMutex.acquire();
-
-    let returnVal;
-
-    try {
-        nextPeerNum++;
-        returnVal = nextPeerNum;
-    }
-    finally {
+    shouldStopPeersCheck = async () => {
+        const release = await this.shouldStopPeersMutex.acquire();
+        let toReturn = this.shouldStopPeers;
         release();
+        return toReturn;
     }
 
-    return returnVal;
+
+    setPeerNumberStart = async (peerNum) => {
+        const release = await this.peerNumberMutex.acquire();
+        try {
+            this.nextPeerNum = peerNum;
+        }
+        finally {
+            release();
+        }
+    }
+    getNewPeerNumber = async () => {
+        const release = await this.peerNumberMutex.acquire();
+
+        let returnVal;
+
+        try {
+            this.nextPeerNum++;
+            returnVal = this.nextPeerNum;
+        }
+        finally {
+            release();
+        }
+
+        return returnVal;
+    }
 }
+
+
+

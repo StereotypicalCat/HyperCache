@@ -1,38 +1,28 @@
-import {startNetworkWithConfig} from "./PeerBehaviours.js";
-import {calculate_trust_of_version, printTrustMatrix, printTrustOfEachPeer} from "./TrustManager.js";
-import {
-    calculateConfusionMatrix,
-    calculateTemporalCorrectnessStats,
-    printUsefulStats,
-    printWebsiteTimelines, testDifferentValuesOfLogisticFunction
-} from "./TestHelpers.js";
-import {
-    get_requestable_urls,
-    getAllCorrectWebsitesForUrl,
-    GetWebsiteFakedPlaintext,
-    request_website
-} from "./WebsiteManager.js";
-import {
-    amount_of_consistently_malicious_peers,
-    amount_of_pure_peers,
-    amount_of_sometimes_malicious_peers, logistic_k, logistic_x0,
-    max_time, updateValue
-} from "./SimulationParameters.js";
 import _ from "lodash";
 import {getTime} from "./TimeManager.js";
 import util from "util";
 import cliProgress from "cli-progress";
+import {defaultSimulationParameters, defaultTrustParameters} from "./SimulationParameters.js";
 // create a new progress bar instance and use shades_classic theme
 // Think about attack vector where adversary sends wrong log to new user (is this out of scope / countered by braha protocol)
+import {PeerBehaviours} from "./PeerBehaviours.js";
+import {WebsiteManager} from "./WebsiteManager.js";
+import {TestHelpers} from "./TestHelpers.js";
 
+let WebsiteManagerSimulator = new WebsiteManager(defaultSimulationParameters);
+let PeerBehaviorSimulator = new PeerBehaviours(defaultSimulationParameters, WebsiteManagerSimulator);
+let aol = await PeerBehaviorSimulator.startNetworkWithConfig()
 
 let calculatePostStats = async (aol) => {
     console.log("calculating post stats...")
+
     let endTime = getTime();
+    let testHelper = new TestHelpers(defaultTrustParameters, aol, endTime, WebsiteManagerSimulator);
+
 
     //await printUsefulStats(aol);
 
-    //await printWebsiteTimelines(aol, true);
+    //await testHelper.printWebsiteTimelines(aol, true);
     //let val = await GetWebsiteFakedPlaintext();
     //console.log(val)
 
@@ -42,7 +32,7 @@ let calculatePostStats = async (aol) => {
     //let temporal_matrix = await calculateTemporalCorrectnessStats(aol, endTime);
     //console.log(temporal_matrix)
 
-    let scoreBoard = await testDifferentValuesOfLogisticFunction(aol, endTime);
+    let scoreBoard = await testHelper.testDifferentValuesOfLogisticFunction(endTime);
     console.log(scoreBoard.confusionMatrixConfigStats)
     console.log(scoreBoard.temporalCorrectnessConfigStats)
     console.log(scoreBoard.bestTotalConfigStats)
@@ -50,9 +40,8 @@ let calculatePostStats = async (aol) => {
 }
 
 
-let aol = await startNetworkWithConfig(amount_of_pure_peers, amount_of_consistently_malicious_peers, amount_of_sometimes_malicious_peers, await get_requestable_urls(), request_website, max_time)
 
-let simulationTimeWithBuffer = max_time + 3
+let simulationTimeWithBuffer = defaultSimulationParameters.max_time + 3
 const opt = {
     format: 'Running Simulation... [{bar}] {percentage}% | {value}/{total}',
     stopOnComplete: true,

@@ -1,11 +1,10 @@
 import {Mutex} from "async-mutex";
 import {getTime} from "./TimeManager.js";
-import {max_time} from "./SimulationParameters.js";
-
 class AppendOnlyLog{
 
     // NumberOfPeers only used for simulation.
-    constructor(){
+    constructor(simulation_parameters){
+        this.simulation_parameres = simulation_parameters;
         this.peersInSystem = new Map();
         this.websites = new Map();
         this.logHistory = [];
@@ -24,7 +23,7 @@ class AppendOnlyLog{
 
     async getLogLength(){
         // If the simulation is ended, this can be sped up a whole lot as nothing should be adding to the log.
-        if (getTime() > max_time){
+        if (getTime() > this.simulation_parameres.max_time){
             return this.logHistory.length;
         }
 
