@@ -33,9 +33,11 @@ let calculatePostStats = async (aol) => {
     //console.log(temporal_matrix)
 
     let scoreBoard = await testHelper.testDifferentValuesOfLogisticFunction(endTime);
-    console.log(scoreBoard.confusionMatrixConfigStats)
-    console.log(scoreBoard.temporalCorrectnessConfigStats)
+    //console.log(scoreBoard.confusionMatrixConfigStats)
+    //console.log(scoreBoard.temporalCorrectnessConfigStats)
+    console.log("TOTAL BEST ================================")
     console.log(scoreBoard.bestTotalConfigStats)
+    console.log("ONLY CORRECT ================================")
     console.log(scoreBoard.confusionMatrixNoWrongTrustedStats)
 }
 

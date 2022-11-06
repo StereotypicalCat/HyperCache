@@ -4,8 +4,8 @@ import {TestHelpers} from "./TestHelpers.js";
 import {WebsiteManager} from "./WebsiteManager.js";
 import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
 
-
-parentPort.postMessage(await calculateConfusionAndTemporalStats(workerData))
+let result = await calculateConfusionAndTemporalStats(workerData)
+parentPort.postMessage(result);
 
 async function calculateConfusionAndTemporalStats(workerData) {
     const website_manager = new WebsiteManager(workerData.simulation_parameters);
@@ -57,6 +57,11 @@ async function calculateConfusionAndTemporalStats(workerData) {
             trust_for_validating_resource: workerData.trust_parameters.trust_for_validating_resource,
             populous_multiplier: workerData.trust_parameters.populous_multiplier,
             ...confusion_matrix
+        }
+    }
+    else{
+        result.confusionMatrixNoWrongTrustedStats = {
+            score: -1,
         }
     }
 

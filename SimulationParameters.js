@@ -12,12 +12,12 @@ export const defaultTrustParameters = {
 }
 
 export const defaultSimulationParameters = {
-    amount_of_pure_peers: 7,
-    amount_of_consistently_malicious_peers: 2,
-    amount_of_sometimes_malicious_peers: 1,
+    amount_of_pure_peers: 22,
+    amount_of_consistently_malicious_peers: 4,
+    amount_of_sometimes_malicious_peers: 4,
     // Max time in seconds that the simulation uses. Basically the time that the simulation runs.
-    max_time: 10,
-    number_of_websites_to_generate: 3,
+    max_time: 40,
+    number_of_websites_to_generate: 10,
     // Meaning EXTRA versions. All websites have at least 1 version, that being at time 0.
     max_number_of_versions_per_website: 2,
     min_number_of_versions_per_website: 2,
@@ -27,7 +27,7 @@ export const defaultSimulationParameters = {
     // timeout to make sure peer number doesn't strictly correlate with request time
     min_peer_time_before_first_request: 0.2,
     max_peer_time_before_first_request: 0.2,
-    chance_a_peer_churns: 0.02,
+    chance_a_peer_churns: 0.05,
     // timeout of peer clients before they go revalidate a website
     peer_timeout: 1,
     chance_of_sometimes_being_malicious: 0.1,

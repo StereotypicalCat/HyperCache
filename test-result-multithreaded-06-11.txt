@@ -1,0 +1,10 @@
+These are an idea to what is important, gathered from the first run.
+  {
+    score: 0.9314285714285715,
+    min_confidence: 0.5,
+    logistic_k: 2.1,
+    logistic_x0: 0,
+    trust_for_new_resources: 1 | 3.5,
+    trust_for_validating_resource: 1,
+    populous_multiplier: 0 | 0.2 | 0.4 | 0.6  },
+  {

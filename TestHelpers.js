@@ -194,25 +194,40 @@ export class TestHelpers {
         const unfinishedThreadsMutex = new Mutex();
         const statisticsArrayMutex = new Mutex();
 
+        let threadsRun = 0;
+
+        const startTime = new Date().getSeconds();
+        console.log("Start time", startTime)
 
         /*    const minconfidence = testDiffernetValuesTimer.create(0.8, 0.4);
             const logistick = testDiffernetValuesTimer.create(7, 1);*/
 
         // This doesn't test different simulation parameters. Only different trust parameters.
-        for (let min_confidence_to_test = 0.30; min_confidence_to_test <= 0.9; min_confidence_to_test += 0.075) {
-            for (let logistic_k_to_test = 0.1; logistic_k_to_test < 7; logistic_k_to_test += 0.5) {
-                for (let logistic_x0_to_test = -10; logistic_x0_to_test <= 2.5; logistic_x0_to_test += 10) {
-                    for (let trust_for_new_resources_to_test = 1; trust_for_new_resources_to_test < 10; trust_for_new_resources_to_test += 1) {
-                        for (let trust_for_validating_resource_to_test = 1; trust_for_validating_resource_to_test < 10; trust_for_validating_resource_to_test += 1) {
-                            for (let populous_multiplier_to_test = 0; populous_multiplier_to_test < 0.5; populous_multiplier_to_test += 0.05) {
+        for (let min_confidence_to_test = 0.25; min_confidence_to_test <= 0.6; min_confidence_to_test += 0.15) {
+            console.log("Did outer loop iteration")
+            for (let logistic_k_to_test = 0.5; logistic_k_to_test < 4; logistic_k_to_test += 1) {
+                for (let logistic_x0_to_test = -4; logistic_x0_to_test <= 4; logistic_x0_to_test += 2) {
+                    for (let trust_for_new_resources_to_test = 1; trust_for_new_resources_to_test <= 11; trust_for_new_resources_to_test += 5) {
+                        for (let trust_for_validating_resource_to_test = 1; trust_for_validating_resource_to_test < 2; trust_for_validating_resource_to_test += 1) {
+                            for (let populous_multiplier_to_test = 0; populous_multiplier_to_test < 0.7; populous_multiplier_to_test += 0.35) {
 
                                 let shouldCreateMoreThreads = false
                                 while (!shouldCreateMoreThreads) {
                                     const release = await unfinishedThreadsMutex.acquire();
                                     try {
-                                        if (unfinishedThreads < 2){
+                                        if (unfinishedThreads < 14){
+                                            //console.log("Creating new thread as " + threadsRun + " threads have been run and " + unfinishedThreads + " are unfinished")
+                                            threadsRun++;
+                                            if (threadsRun % 10 === 0){
+                                                console.log("Throughput: " + threadsRun / (new Date().getSeconds() - startTime) + " threads per second")
+
+                                            }
+                                            unfinishedThreads++;
                                             shouldCreateMoreThreads = true;
                                         }
+
+
+
                                     }
                                     finally {
                                         release();
@@ -243,27 +258,22 @@ export class TestHelpers {
                                 }})
 
                                 worker.once("message", async result => {
-                                    const release = await statisticsArrayMutex.acquire();
-                                    try {
-                                        confusionMatrixConfigStats.push(result.confusionMatrixConfig);
-                                        confusionMatrixNoWrongTrustedStats.push(result.confusionMatrixNoWrongTrusted);
-                                        temporalCorrectnessConfigStats.push(result.temporalCorrectnessConfig);
-                                        bestTotalConfigStats.push(result.bestTotalConfig);
-                                    }
-                                    finally {
-                                        release();
-                                    }
-                                });
+                                    const release1 = await statisticsArrayMutex.acquire();
+                                    const release2 = await unfinishedThreadsMutex.acquire();
 
-                                worker.on("exit", async exitCode => {
-                                    const release = await unfinishedThreadsMutex.acquire();
+
                                     try {
+                                        confusionMatrixConfigStats.push(result.confusionMatrixConfigStats);
+                                        confusionMatrixNoWrongTrustedStats.push(result.confusionMatrixNoWrongTrustedStats);
+                                        temporalCorrectnessConfigStats.push(result.temporalCorrectnessConfigStats);
+                                        bestTotalConfigStats.push(result.bestTotalConfigStats);
                                         unfinishedThreads--;
                                     }
                                     finally {
-                                        release();
+                                        release1();
+                                        release2();
                                     }
-                                })
+                                });
 
                             }
                         }
