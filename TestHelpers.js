@@ -196,7 +196,7 @@ export class TestHelpers {
 
         let threadsRun = 0;
 
-        const startTime = new Date().getSeconds();
+        const startTime = new Date() / 1000;
         console.log("Start time", startTime)
 
         /*    const minconfidence = testDiffernetValuesTimer.create(0.8, 0.4);
@@ -219,7 +219,7 @@ export class TestHelpers {
                                             //console.log("Creating new thread as " + threadsRun + " threads have been run and " + unfinishedThreads + " are unfinished")
                                             threadsRun++;
                                             if (threadsRun % 10 === 0){
-                                                console.log("Throughput: " + threadsRun / (new Date().getSeconds() - startTime) + " threads per second")
+                                                console.log("Throughput: " + threadsRun / ((new Date() / 1000) - startTime) + " threads per second")
 
                                             }
                                             unfinishedThreads++;

@@ -10,7 +10,6 @@ export class TrustManager {
     }
 
 
-
     // Needs to be rewritten and refactored to work with key-like ids instead of numbers
 // For the simulation tests, this is fine
     async get_unique_peers() {
@@ -166,8 +165,11 @@ export class TrustManager {
             let totalTrustOfAllVersions = 0;
             let totalVersions = 0;
 
+            let trust_of_version_at_time_cache = new Map();
+
             for (const [hash] of hashes) {
                 let trust = await this.calculate_trust_of_version_at_time(url, hash, time)
+                trust_of_version_at_time_cache.set(hash, trust)
                 //console.log(" hash: " + hash + " trust: " + trust)
                 totalTrustOfAllVersions += trust;
                 totalVersions += 1;
@@ -179,36 +181,22 @@ export class TrustManager {
 
             ///console.log("Most trusted version at time " + time + " is " + mostTrustedVersionHash + " with score " + mostTrustedVersionScore)
 
-            if (this.TrustSettings.only_most_trusted) {
-                //console.log("CalculatedTimeline: ", calculatedTimeline)
-                if (withConfidence === false && (calculatedTimeline.length === 0 || calculatedTimeline[calculatedTimeline.length - 1].hash !== mostTrustedVersionHash)) {
-                    calculatedTimeline.push({timeStart: time, hash: mostTrustedVersionHash})
-                } else if (withConfidence === true) {
-                    let confidence = mostTrustedVersionScore / totalTrustOfAllVersions;
-                    calculatedTimeline.push({
-                        timeStart: time,
-                        hash: mostTrustedVersionHash,
-                        confidence: confidence,
-                        totalVersions: totalVersions
-                    })
-                }
-            } else {
-                // run through all versions again and calculate their confidence
-                let trustedVersions = []
-                for (const [hash] of hashes) {
-                    let trust = await this.calculate_trust_of_version_at_time(url, hash, time)
-                    //console.log(" hash: " + hash + " trust: " + trust)
-                    if (respectMinimumConfidence) {
-                        if (trust / totalTrustOfAllVersions > this.TrustSettings.minimum_confidence) {
-                            trustedVersions.push({hash: hash, confidence: trust / totalTrustOfAllVersions})
-                        }
-                    } else {
+            // run through all versions again and calculate their confidence
+            let trustedVersions = []
+            for (const [hash] of hashes) {
+                let trust = trust_of_version_at_time_cache.get(hash)
+                //console.log(" hash: " + hash + " trust: " + trust)
+                if (respectMinimumConfidence) {
+                    if (trust / totalTrustOfAllVersions > this.TrustSettings.minimum_confidence) {
                         trustedVersions.push({hash: hash, confidence: trust / totalTrustOfAllVersions})
                     }
-
+                } else {
+                    trustedVersions.push({hash: hash, confidence: trust / totalTrustOfAllVersions})
                 }
-                calculatedTimeline.push({timeStart: time, versions: trustedVersions, totalVersions: totalVersions})
+
             }
+            calculatedTimeline.push({timeStart: time, versions: trustedVersions, totalVersions: totalVersions})
+
 
         }
 
@@ -244,7 +232,6 @@ export class TrustManager {
 
         this.latestTrustMatrix = trustMatrix;
         return trustMatrix;
-
     }
 
     async printTrustMatrix(aol) {
