@@ -75,6 +75,7 @@ async function calculateConfusionAndTemporalStats(workerData) {
         trust_for_validating_resource: workerData.trust_parameters.trust_for_validating_resource,
         populous_multiplier: workerData.trust_parameters.populous_multiplier,
         ...confusion_matrix,
+        ...temporal_matrix
     }
 
     return result;

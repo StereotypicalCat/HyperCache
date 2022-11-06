@@ -3,8 +3,6 @@ export const defaultTrustParameters = {
     trust_for_validating_resource: 1,
     popolous_multiplier: (1/10),
     minimum_confidence: 0.65,
-    // Only trust one version per slot. TODO: Currently not implemented. Should only be set to false.
-    only_most_trusted: false,
     // Logistic function used to calculate trust
     logistic_L: 1,
     logistic_k: 2.5,
@@ -12,14 +10,14 @@ export const defaultTrustParameters = {
 }
 
 export const defaultSimulationParameters = {
-    amount_of_pure_peers: 22,
-    amount_of_consistently_malicious_peers: 4,
-    amount_of_sometimes_malicious_peers: 4,
+    amount_of_pure_peers: 30,
+    amount_of_consistently_malicious_peers: 7,
+    amount_of_sometimes_malicious_peers: 7,
     // Max time in seconds that the simulation uses. Basically the time that the simulation runs.
-    max_time: 40,
-    number_of_websites_to_generate: 10,
+    max_time: 60,
+    number_of_websites_to_generate: 15,
     // Meaning EXTRA versions. All websites have at least 1 version, that being at time 0.
-    max_number_of_versions_per_website: 2,
+    max_number_of_versions_per_website: 6,
     min_number_of_versions_per_website: 2,
     // min and max time it takes to request a website
     min_request_time: 0.1,
@@ -30,6 +28,6 @@ export const defaultSimulationParameters = {
     chance_a_peer_churns: 0.05,
     // timeout of peer clients before they go revalidate a website
     peer_timeout: 1,
-    chance_of_sometimes_being_malicious: 0.1,
+    chance_of_sometimes_being_malicious: 0.05,
 }
 
