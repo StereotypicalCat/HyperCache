@@ -220,29 +220,22 @@ export class TestHelpers {
             const logistick = testDiffernetValuesTimer.create(7, 1);*/
 
         // This doesn't test different simulation parameters. Only different trust parameters.
-        for (let trust_for_new_resources_to_test = 1; trust_for_new_resources_to_test <= 1; trust_for_new_resources_to_test += 1) {
+        for (let min_confidence_to_test = 0.2; min_confidence_to_test <= 0.75; min_confidence_to_test += 0.15) {
             console.log("Did outer loop iteration")
-            for (let trust_for_validating_resource_to_test = 1; trust_for_validating_resource_to_test < 2; trust_for_validating_resource_to_test += 1) {
-                let newThreadParamteres = _.cloneDeep(this.trust_parameters);
-                newThreadParamteres.trust_for_new_resources = trust_for_new_resources_to_test;
-                newThreadParamteres.trust_for_validating_resource = trust_for_validating_resource_to_test;
-                let tempTrustManager = new TrustManager(newThreadParamteres, this.aol)
-                const trustMatrix = await tempTrustManager.calculate_trust_matrix();
-                const latestLength = await this.aol.getLogLength();
-
-                for (let min_confidence_to_test = 0.2; min_confidence_to_test <= 0.75; min_confidence_to_test += 0.15) {
-                    for (let logistic_k_to_test = 0; logistic_k_to_test <= 4; logistic_k_to_test += 1) {
-                        for (let logistic_x0_to_test = 0; logistic_x0_to_test <= 4; logistic_x0_to_test += 1) {
+            for (let logistic_k_to_test = 0; logistic_k_to_test <= 4; logistic_k_to_test += 1) {
+                for (let logistic_x0_to_test = 0; logistic_x0_to_test <= 4; logistic_x0_to_test += 1) {
+                    for (let trust_for_new_resources_to_test = 1; trust_for_new_resources_to_test <= 1; trust_for_new_resources_to_test += 1) {
+                        for (let trust_for_validating_resource_to_test = 1; trust_for_validating_resource_to_test < 2; trust_for_validating_resource_to_test += 1) {
                             for (let populous_multiplier_to_test = 0.00; populous_multiplier_to_test <= 0.05; populous_multiplier_to_test += 0.05) {
 
                                 let shouldCreateMoreThreads = false
                                 while (!shouldCreateMoreThreads) {
                                     const release = await unfinishedThreadsMutex.acquire();
                                     try {
-                                        if (unfinishedThreads < 14) {
+                                        if (unfinishedThreads < 14){
                                             //console.log("Creating new thread as " + threadsRun + " threads have been run and " + unfinishedThreads + " are unfinished")
                                             threadsRun++;
-                                            if (threadsRun % 10 === 0) {
+                                            if (threadsRun % 10 === 0){
                                                 console.log("Throughput: " + threadsRun / ((new Date() / 1000) - startTime) + " threads per second")
 
                                             }
@@ -251,15 +244,21 @@ export class TestHelpers {
                                         }
 
 
-                                    } finally {
+
+                                    }
+                                    finally {
                                         release();
                                     }
                                     await this.waitforme(100);
                                 }
 
+
+                                let newThreadParamteres = _.cloneDeep(this.trust_parameters);
                                 newThreadParamteres.minimum_confidence = min_confidence_to_test;
                                 newThreadParamteres.logistic_k = logistic_k_to_test;
                                 newThreadParamteres.logistic_x0 = logistic_x0_to_test;
+                                newThreadParamteres.trust_for_new_resources = trust_for_new_resources_to_test;
+                                newThreadParamteres.trust_for_validating_resource = trust_for_validating_resource_to_test;
                                 newThreadParamteres.populous_multiplier = populous_multiplier_to_test;
 
                                 // Cant deep dopy classes
@@ -269,8 +268,6 @@ export class TestHelpers {
                                     workerData:
                                         {
                                             trust_parameters: newThreadParamteres,
-                                            trust_matrix: trustMatrix,
-                                            latest_length: latestLength,
                                             simulation_parameters: this.simulation_paramerets,
                                             websites: await this.websiteManager.GetWebsiteFakedPlaintext(),
                                             endTime: endTime,

@@ -15,7 +15,6 @@ async function calculateConfusionAndTemporalStats(workerData) {
     await appendOnlyLog.updateAOL(workerData.websitesAOL, workerData.peersInSystem);
 
     let testHelper = new TestHelpers(workerData.trust_parameters, appendOnlyLog, workerData.endTime, website_manager, workerData.simulation_parameters);
-    await testHelper.setThreadData(workerData.trust_matrix, workerData.latest_length)
 
     let confusion_matrix = await testHelper.calculateConfusionMatrix(workerData.endTime)
     let temporal_matrix = await testHelper.calculateTemporalCorrectnessStats(workerData.endTime);

@@ -206,12 +206,6 @@ export class TrustManager {
 
     }
 
-    async set_trust_matrix(trustMatrix, aol_length) {
-        this.latestTrustMatrix = trustMatrix;
-        this.latestVersionLength = aol_length;
-    }
-
-
     async calculate_trust_matrix() {
         let logHistoryLength = await this.aol.getLogLength();
 
