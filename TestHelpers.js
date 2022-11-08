@@ -226,13 +226,13 @@ export class TestHelpers {
             const logistick = testDiffernetValuesTimer.create(7, 1);*/
 
         // This doesn't test different simulation parameters. Only different trust parameters.
-        for (let min_confidence_to_test = 0.2; min_confidence_to_test <= 0.75; min_confidence_to_test += 0.15) {
+        for (let min_confidence_to_test = 0.2; min_confidence_to_test <= 0.35; min_confidence_to_test += 0.15) {
             console.log("Did outer loop iteration")
-            for (let logistic_k_to_test = 0; logistic_k_to_test <= 4; logistic_k_to_test += 1) {
-                for (let logistic_x0_to_test = 0; logistic_x0_to_test <= 4; logistic_x0_to_test += 1) {
-                    for (let trust_for_new_resources_to_test = 1; trust_for_new_resources_to_test <= 1; trust_for_new_resources_to_test += 1) {
-                        for (let trust_for_validating_resource_to_test = 1; trust_for_validating_resource_to_test < 2; trust_for_validating_resource_to_test += 1) {
-                            for (let populous_multiplier_to_test = 0.00; populous_multiplier_to_test <= 0.05; populous_multiplier_to_test += 0.05) {
+            for (let logistic_k_to_test = 0; logistic_k_to_test <= 4; logistic_k_to_test += 0.5) {
+                for (let logistic_x0_to_test = 0; logistic_x0_to_test <= 4; logistic_x0_to_test += 0.5) {
+                    for (let trust_for_new_resources_to_test = 1; trust_for_new_resources_to_test <= 6; trust_for_new_resources_to_test += 1) {
+                        for (let trust_for_validating_resource_to_test = 1; trust_for_validating_resource_to_test <= 1; trust_for_validating_resource_to_test += 1) {
+                            for (let populous_multiplier_to_test = 0.00; populous_multiplier_to_test <= 0.25; populous_multiplier_to_test += 0.05) {
 
                                 let shouldCreateMoreThreads = false
                                 while (!shouldCreateMoreThreads) {

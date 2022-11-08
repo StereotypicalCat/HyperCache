@@ -45,7 +45,7 @@ let calculatePostStats = async (aol) => {
     const csv = new ObjectsToCsv(withTrustSettings);
 
     // Save to file:
-    const options = {append: true};
+    const options = {append: true, bom: true};
     await csv.toDisk('./test.csv', options);
 
     // Return the CSV file as string:
