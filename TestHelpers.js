@@ -109,8 +109,12 @@ export class TestHelpers {
             let allVersions = timeline.map((timelineObj) => {
                 return timelineObj.versions
             }).flat().map(version => version.hash);
-            allVersions = _.uniq(allVersions);
+
             let correctVersions = await this.websiteManager.getAllCorrectWebsitesForUrl(url);
+
+            allVersions.push(correctVersions)
+
+            allVersions = _.uniq(allVersions);
 
             //console.log("trusted versions", trustedVersions)
             //console.log("correct versions", correctVersions)
@@ -126,6 +130,8 @@ export class TestHelpers {
             let incorrectWebsitesTrusted = trustedVersions.filter((version) => {
                 return !correctVersions.includes(version)
             }).length;
+
+
             let incorrectWebsitesNotTrusted = allVersions.length - correctWebsitesTrusted - correctWebsitesNotTrusted - incorrectWebsitesTrusted;
 
 
