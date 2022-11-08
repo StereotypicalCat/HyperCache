@@ -8,6 +8,7 @@ import {defaultSimulationParameters, defaultTrustParameters} from "./SimulationP
 import {PeerBehaviours} from "./PeerBehaviours.js";
 import {WebsiteManager} from "./WebsiteManager.js";
 import {TestHelpers} from "./TestHelpers.js";
+import ObjectsToCsv from "objects-to-csv";
 
 let WebsiteManagerSimulator = new WebsiteManager(defaultSimulationParameters);
 let PeerBehaviorSimulator = new PeerBehaviours(defaultSimulationParameters, WebsiteManagerSimulator);
@@ -33,12 +34,22 @@ let calculatePostStats = async (aol) => {
     //console.log(temporal_matrix)
 
     let scoreBoard = await testHelper.testDifferentValuesOfLogisticFunction(endTime);
-    //console.log(scoreBoard.confusionMatrixConfigStats)
-    //console.log(scoreBoard.temporalCorrectnessConfigStats)
-    console.log("TOTAL BEST ================================")
-    console.log(scoreBoard.bestTotalConfigStats)
-    console.log("ONLY CORRECT ================================")
-    console.log(scoreBoard.confusionMatrixNoWrongTrustedStats)
+
+    let withTrustSettings = scoreBoard.map((score) => {
+        return {
+            ...score,
+            ...defaultTrustParameters
+        }
+    })
+
+    const csv = new ObjectsToCsv(withTrustSettings);
+
+    // Save to file:
+    const options = {append: true};
+    await csv.toDisk('./test.csv', options);
+
+    // Return the CSV file as string:
+
 }
 
 

@@ -64,11 +64,25 @@ class AppendOnlyLog{
         }
     }
 
+    async peerJoinsSystem(peerId){
+        const release = await this.lock.acquire();
+
+        try {
+            if (!this.peersInSystem.has(peerId)){
+                this.peersInSystem.set(peerId, 1);
+            }
+        }
+        finally {
+            release();
+        }
+    }
+
     async tryAddNewVersion(tree, peerId, url, time){
         const release = await this.lock.acquire();
 
-        if (!this.peersInSystem.has(peerId)){
-            this.peersInSystem.set(peerId, 1);
+        if (getTime() > this.simulation_parameres.max_time){
+            release();
+            return;
         }
 
         try{
@@ -110,8 +124,9 @@ class AppendOnlyLog{
     async tryAddNewValidation(tree, peerId, url, time){
         const release = await this.lock.acquire();
 
-        if (!this.peersInSystem.has(peerId)){
-            this.peersInSystem.set(peerId, 1);
+        if (getTime() > this.simulation_parameres.max_time){
+            release();
+            return;
         }
 
         const toplevelhash = tree.value;

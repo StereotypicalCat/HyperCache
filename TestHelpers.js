@@ -184,11 +184,7 @@ export class TestHelpers {
 
     testDifferentValuesOfLogisticFunction = async(endTime) => {
 
-
-        let confusionMatrixConfigStats = [];
-        let confusionMatrixNoWrongTrustedStats = [];
-        let temporalCorrectnessConfigStats = [];
-        let bestTotalConfigStats = [];
+        let output_data = []
 
         let unfinishedThreads = 0;
         const unfinishedThreadsMutex = new Mutex();
@@ -203,13 +199,13 @@ export class TestHelpers {
             const logistick = testDiffernetValuesTimer.create(7, 1);*/
 
         // This doesn't test different simulation parameters. Only different trust parameters.
-        for (let min_confidence_to_test = 0.25; min_confidence_to_test <= 0.6; min_confidence_to_test += 0.15) {
+        for (let min_confidence_to_test = 0.2; min_confidence_to_test <= 0.75; min_confidence_to_test += 0.15) {
             console.log("Did outer loop iteration")
-            for (let logistic_k_to_test = 0.25; logistic_k_to_test < 4; logistic_k_to_test += 0.25) {
-                for (let logistic_x0_to_test = 0; logistic_x0_to_test <= 5; logistic_x0_to_test += 0.25) {
+            for (let logistic_k_to_test = 0; logistic_k_to_test <= 4; logistic_k_to_test += 1) {
+                for (let logistic_x0_to_test = 0; logistic_x0_to_test <= 4; logistic_x0_to_test += 1) {
                     for (let trust_for_new_resources_to_test = 1; trust_for_new_resources_to_test <= 1; trust_for_new_resources_to_test += 1) {
                         for (let trust_for_validating_resource_to_test = 1; trust_for_validating_resource_to_test < 2; trust_for_validating_resource_to_test += 1) {
-                            for (let populous_multiplier_to_test = 0; populous_multiplier_to_test <= 0; populous_multiplier_to_test += 0) {
+                            for (let populous_multiplier_to_test = 0.00; populous_multiplier_to_test <= 0.05; populous_multiplier_to_test += 0.05) {
 
                                 let shouldCreateMoreThreads = false
                                 while (!shouldCreateMoreThreads) {
@@ -263,10 +259,7 @@ export class TestHelpers {
 
 
                                     try {
-                                        confusionMatrixConfigStats.push(result.confusionMatrixConfigStats);
-                                        confusionMatrixNoWrongTrustedStats.push(result.confusionMatrixNoWrongTrustedStats);
-                                        temporalCorrectnessConfigStats.push(result.temporalCorrectnessConfigStats);
-                                        bestTotalConfigStats.push(result.bestTotalConfigStats);
+                                        output_data.push(result);
                                         unfinishedThreads--;
                                     }
                                     finally {
@@ -297,20 +290,11 @@ export class TestHelpers {
             await this.waitforme(1000);
         }
 
-        console.log("Sorting Results")
 
-        confusionMatrixConfigStats.sort((a, b) => b.score - a.score);
-        temporalCorrectnessConfigStats.sort((a, b) => b.score - a.score);
-        bestTotalConfigStats.sort((a, b) => b.score - a.score);
-        confusionMatrixNoWrongTrustedStats.sort((a, b) => b.score - a.score);
+        console.log("== FINAL Throughput: " + threadsRun / ((new Date() / 1000) - startTime) + " threads per second ==")
 
         console.log("Done")
-        return {
-            confusionMatrixConfigStats,
-            temporalCorrectnessConfigStats,
-            bestTotalConfigStats,
-            confusionMatrixNoWrongTrustedStats
-        }
+        return output_data;
 
     }
 

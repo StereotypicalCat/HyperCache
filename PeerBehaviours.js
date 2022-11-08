@@ -80,6 +80,8 @@ export class PeerBehaviours {
 
         let mainLoop = async () => {
 
+            await aol.peerJoinsSystem(currentPeerNum);
+
             if (await this.shouldStopPeersCheck()){
                 return;
             }
@@ -143,6 +145,8 @@ export class PeerBehaviours {
     startNetworkWithConfig = async () => {
         const aol = new AppendOnlyLog(this.simulation_parameters);
 
+        await this.setPeerNumberStart(this.simulation_parameters.amount_of_pure_peers + this.simulation_parameters.amount_of_consistently_malicious_peers + this.simulation_parameters.amount_of_consistently_malicious_peers)
+
         for (let i = 0; i < this.simulation_parameters.amount_of_pure_peers; i++) {
             this.startPeer(i, aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.purePeerStrategy, this.simulation_parameters)
         }
@@ -153,7 +157,6 @@ export class PeerBehaviours {
             this.startPeer(i, aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.sometimesMaliciousPeerStrategy, this.simulation_parameters)
         }
 
-        await this.setPeerNumberStart(this.simulation_parameters.amount_of_pure_peers + this.simulation_parameters.amount_of_consistently_malicious_peers + this.simulation_parameters.amount_of_consistently_malicious_peers)
         setTimeout(() => {
             this.stopPeers();
         }, this.simulation_parameters.max_time * 1000)
