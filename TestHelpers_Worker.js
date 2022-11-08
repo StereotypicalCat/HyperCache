@@ -15,6 +15,7 @@ async function calculateConfusionAndTemporalStats(workerData) {
     await appendOnlyLog.updateAOL(workerData.websitesAOL, workerData.peersInSystem);
 
     let testHelper = new TestHelpers(workerData.trust_parameters, appendOnlyLog, workerData.endTime, website_manager, workerData.simulation_parameters);
+    await testHelper.setThreadData(workerData.trust_matrix, workerData.latest_length)
 
     let confusion_matrix = await testHelper.calculateConfusionMatrix(workerData.endTime)
     let temporal_matrix = await testHelper.calculateTemporalCorrectnessStats(workerData.endTime);
@@ -25,7 +26,7 @@ async function calculateConfusionAndTemporalStats(workerData) {
 
     let temporal_correctness_score = temporal_matrix.url_correct_slot / temporal_matrix.total_slots;
 
-    const result = {
+    return {
         confusion_score: confusion_matrix_score,
         temporal_score: temporal_correctness_score,
         min_confidence: workerData.trust_parameters.minimum_confidence,
@@ -36,8 +37,6 @@ async function calculateConfusionAndTemporalStats(workerData) {
         populous_multiplier: workerData.trust_parameters.populous_multiplier,
         ...confusion_matrix,
         ...temporal_matrix
-    }
-
-    return result;
+    };
 
 }

@@ -38,7 +38,7 @@ let calculatePostStats = async (aol) => {
     let withTrustSettings = scoreBoard.map((score) => {
         return {
             ...score,
-            ...defaultTrustParameters
+            ...defaultSimulationParameters
         }
     })
 
