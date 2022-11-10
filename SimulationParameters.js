@@ -20,12 +20,12 @@ export const defaultSimulationParameters = {
     max_number_of_versions_per_website: 4,
     min_number_of_versions_per_website: 2,
     // min and max time it takes to request a website
-    min_request_time: 0.1,
-    max_request_time: 0.2,
+    min_request_time: 0,
+    max_request_time: 0,
     // timeout to make sure peer number doesn't strictly correlate with request time
-    min_peer_time_before_first_request: 0.2,
-    max_peer_time_before_first_request: 0.2,
-    chance_a_peer_churns: 0.05,
+    min_peer_time_before_first_request: 0,
+    max_peer_time_before_first_request: 0,
+    chance_a_peer_churns: 0,
     // timeout of peer clients before they go revalidate a website
     peer_timeout: 1,
     chance_of_sometimes_being_malicious: 0.05,

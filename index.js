@@ -9,7 +9,13 @@ import {WebsiteManager} from "./WebsiteManager.js";
 import {TestHelpers} from "./TestHelpers.js";
 import ObjectsToCsv from "objects-to-csv";
 
+
+
 let testHelper = new TestHelpers(defaultTrustParameters, null, null, null, defaultSimulationParameters);
+
+//await testHelper.testSingleRun();
+
+
 
 let data = await testHelper.testDifferentSimulationParameters();
 

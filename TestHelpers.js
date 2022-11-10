@@ -4,7 +4,11 @@ import cliProgress from "cli-progress";
 import {TrustManager} from "./TrustManager.js";
 import {Mutex} from "async-mutex";
 import {Worker} from "worker_threads";
-import {defaultSimulationParameters} from "./SimulationParameters.js";
+import {defaultSimulationParameters, defaultTrustParameters} from "./SimulationParameters.js";
+import {TimeManager} from "./TimeManager.js";
+import {WebsiteManager} from "./WebsiteManager.js";
+import {PeerBehaviours} from "./PeerBehaviours.js";
+import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
 
 export class TestHelpers {
 
@@ -110,21 +114,20 @@ export class TestHelpers {
 
             let correctVersions = await this.websiteManager.getAllCorrectWebsitesForUrl(url);
 
-            allVersions.push(correctVersions)
+            allVersions.push(...correctVersions)
 
             allVersions = _.uniq(allVersions);
 
-            //console.log("trusted versions", trustedVersions)
-            //console.log("correct versions", correctVersions)
-            //console.log("All versions", allVersions)
+/*            console.log("trusted versions", trustedVersions)
+            console.log("correct versions", correctVersions)
+            console.log("All versions", allVersions)*/
 
 
             let correctWebsitesTrusted = trustedVersions.filter((version) => {
                 return correctVersions.includes(version)
             }).length;
-            let correctWebsitesNotTrusted = correctVersions.filter((version) => {
-                return !trustedVersions.includes(version)
-            }).length;
+            let correctWebsitesNotTrusted = correctVersions.length - correctWebsitesTrusted;
+
             let incorrectWebsitesTrusted = trustedVersions.filter((version) => {
                 return !correctVersions.includes(version)
             }).length;
@@ -207,6 +210,22 @@ export class TestHelpers {
 
     }
 
+    testSingleRun = async() => {
+        let timeManager = new TimeManager();
+        let WebsiteManagerSimulator = new WebsiteManager(defaultSimulationParameters, timeManager);
+        let PeerBehaviorSimulator = new PeerBehaviours(defaultSimulationParameters, WebsiteManagerSimulator, timeManager);
+        console.log("Starting Simulation");
+        let aol = await PeerBehaviorSimulator.startNetworkWithConfig();
+
+        console.log("Generating Data");
+
+        let testHelper = new TestHelpers(defaultTrustParameters, aol, WebsiteManagerSimulator, defaultSimulationParameters);
+
+        let confusion_matrix = await testHelper.calculateConfusionMatrix(defaultSimulationParameters.max_time);
+        let temporal_matrix = await testHelper.calculateTemporalCorrectnessStats(defaultSimulationParameters.max_time);
+
+    }
+
     testDifferentSimulationParameters = async() => {
 
         let total_data = []
@@ -217,16 +236,16 @@ export class TestHelpers {
 
         let threadsRun = 0;
 
-        for (let max_time_to_test = 10; max_time_to_test <= 10; max_time_to_test += 10) {
-            for (let percent_malicious_to_test = 0; percent_malicious_to_test <= 0.5; percent_malicious_to_test += 0.05) {
-                for (let versions_to_generate_test = 2; versions_to_generate_test <= 2; versions_to_generate_test++) {
-                    for (let websites_to_generate_test = 2; websites_to_generate_test <= 2; websites_to_generate_test++) {
+        for (let max_time_to_test = 10; max_time_to_test <= 30; max_time_to_test += 10) {
+            for (let percent_malicious_to_test = 0; percent_malicious_to_test <= 0; percent_malicious_to_test += 0.05) {
+                for (let versions_to_generate_test = 2; versions_to_generate_test <= 3; versions_to_generate_test++) {
+                    for (let websites_to_generate_test = 2; websites_to_generate_test <= 5; websites_to_generate_test++) {
 
                         let shouldCreateMoreThreads = false
                         while (!shouldCreateMoreThreads) {
                             const release = await unfinishedThreadsMutex.acquire();
                             try {
-                                if (unfinishedThreads < 12){
+                                if (unfinishedThreads < 20){
                                     threadsRun++;
 
                                     unfinishedThreads++;
@@ -311,8 +330,8 @@ export class TestHelpers {
             const logistick = testDiffernetValuesTimer.create(7, 1);*/
 
         // This doesn't test different simulation parameters. Only different trust parameters.
-        for (let min_confidence_to_test = 0.65; min_confidence_to_test <= 0.65; min_confidence_to_test += 0.15) {
-            for (let logistic_k_to_test = 0.5; logistic_k_to_test <= 0.5; logistic_k_to_test += 1) {
+        for (let min_confidence_to_test = 0.25; min_confidence_to_test <= 0.65; min_confidence_to_test += 0.40) {
+            for (let logistic_k_to_test = 1; logistic_k_to_test <= 20; logistic_k_to_test += 5) {
                 for (let logistic_x0_to_test = 3; logistic_x0_to_test <= 10; logistic_x0_to_test += 3) {
                     for (let trust_for_new_resources_to_test = 1; trust_for_new_resources_to_test <= 1; trust_for_new_resources_to_test += 1) {
                         for (let trust_for_validating_resource_to_test = 1; trust_for_validating_resource_to_test <= 1; trust_for_validating_resource_to_test += 1) {
