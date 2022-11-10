@@ -1,10 +1,10 @@
 import {Mutex} from "async-mutex";
-import {getTime} from "./TimeManager.js";
 class AppendOnlyLog{
 
     // NumberOfPeers only used for simulation.
-    constructor(simulation_parameters){
+    constructor(simulation_parameters, timeManager){
         this.simulation_parameres = simulation_parameters;
+        this.timeManager = timeManager;
         this.peersInSystem = new Map();
         this.websites = new Map();
         this.logHistory = [];
@@ -51,7 +51,7 @@ class AppendOnlyLog{
 
     async getLogLength(){
         // If the simulation is ended, this can be sped up a whole lot as nothing should be adding to the log.
-        if (getTime() > this.simulation_parameres.max_time){
+        if (this.timeManager.getTime() > this.simulation_parameres.max_time){
             return this.logHistory.length;
         }
 
@@ -80,7 +80,7 @@ class AppendOnlyLog{
     async tryAddNewVersion(tree, peerId, url, time){
         const release = await this.lock.acquire();
 
-        if (getTime() > this.simulation_parameres.max_time){
+        if (this.timeManager.getTime() > this.simulation_parameres.max_time){
             release();
             return;
         }
@@ -124,7 +124,7 @@ class AppendOnlyLog{
     async tryAddNewValidation(tree, peerId, url, time){
         const release = await this.lock.acquire();
 
-        if (getTime() > this.simulation_parameres.max_time){
+        if (this.timeManager.getTime() > this.simulation_parameres.max_time){
             release();
             return;
         }

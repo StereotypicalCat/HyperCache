@@ -1,5 +1,4 @@
 import _ from "lodash";
-import {getTime} from "./TimeManager.js";
 import util from "util";
 import cliProgress from "cli-progress";
 import {defaultSimulationParameters, defaultTrustParameters} from "./SimulationParameters.js";
@@ -10,14 +9,20 @@ import {WebsiteManager} from "./WebsiteManager.js";
 import {TestHelpers} from "./TestHelpers.js";
 import ObjectsToCsv from "objects-to-csv";
 
-let WebsiteManagerSimulator = new WebsiteManager(defaultSimulationParameters);
-let PeerBehaviorSimulator = new PeerBehaviours(defaultSimulationParameters, WebsiteManagerSimulator);
-let aol = await PeerBehaviorSimulator.startNetworkWithConfig()
+let testHelper = new TestHelpers(defaultTrustParameters, null, null, null, defaultSimulationParameters);
 
-let calculatePostStats = async (aol) => {
+let data = await testHelper.testDifferentSimulationParameters();
+
+const csv = new ObjectsToCsv(data);
+
+// Save to file:
+const options = {append: true, bom: true};
+await csv.toDisk('./test-multi-sim.csv', options);
+
+/*let calculatePostStats = async (aol) => {
     console.log("calculating post stats...")
 
-    let endTime = getTime();
+    let endTime = defaultSimulationParameters.max_time;
     let testHelper = new TestHelpers(defaultTrustParameters, aol, endTime, WebsiteManagerSimulator, defaultSimulationParameters);
 
 
@@ -46,13 +51,26 @@ let calculatePostStats = async (aol) => {
 
     // Save to file:
     const options = {append: true, bom: true};
-    await csv.toDisk('./test.csv', options);
+    await csv.toDisk('./new-tests-temp.csv', options);
 
     // Return the CSV file as string:
 
-}
+}*/
 
+/*
+console.log("Starting simulation...")
+let WebsiteManagerSimulator = new WebsiteManager(defaultSimulationParameters);
+let PeerBehaviorSimulator = new PeerBehaviours(defaultSimulationParameters, WebsiteManagerSimulator);
+let aol = await PeerBehaviorSimulator.startNetworkWithConfig();
 
+console.log("Its uwu time, the sim should be done now")
+
+await calculatePostStats(aol);
+
+console.log("Done uwu")
+*/
+
+/*
 
 let simulationTimeWithBuffer = defaultSimulationParameters.max_time + 3
 const opt = {
@@ -77,4 +95,5 @@ let updateProgress = async (progressBar, time) => {
 }
 
 await updateProgress(simulation_timer, 1000)
+*/
 

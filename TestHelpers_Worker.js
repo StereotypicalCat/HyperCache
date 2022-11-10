@@ -3,6 +3,7 @@ import {parentPort, workerData} from "worker_threads";
 import {TestHelpers} from "./TestHelpers.js";
 import {WebsiteManager} from "./WebsiteManager.js";
 import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
+import {TimeManager} from "./TimeManager.js";
 
 let result = await calculateConfusionAndTemporalStats(workerData)
 parentPort.postMessage(result);
@@ -11,13 +12,14 @@ async function calculateConfusionAndTemporalStats(workerData) {
     const website_manager = new WebsiteManager(workerData.simulation_parameters);
     await website_manager.SetWebsiteFakedPlaintext(workerData.websites);
 
-    const appendOnlyLog = new AppendOnlyLog(workerData.simulation_parameters);
+    const new_time_manager = new TimeManager(true);
+    const appendOnlyLog = new AppendOnlyLog(workerData.simulation_parameters, new_time_manager);
     await appendOnlyLog.updateAOL(workerData.websitesAOL, workerData.peersInSystem);
 
-    let testHelper = new TestHelpers(workerData.trust_parameters, appendOnlyLog, workerData.endTime, website_manager, workerData.simulation_parameters);
+    let testHelper = new TestHelpers(workerData.trust_parameters, appendOnlyLog, website_manager, workerData.simulation_parameters);
 
-    let confusion_matrix = await testHelper.calculateConfusionMatrix(workerData.endTime)
-    let temporal_matrix = await testHelper.calculateTemporalCorrectnessStats(workerData.endTime);
+    let confusion_matrix = await testHelper.calculateConfusionMatrix(workerData.simulation_parameters.max_time)
+    let temporal_matrix = await testHelper.calculateTemporalCorrectnessStats(workerData.simulation_parameters.max_time);
 
     let confusion_matrix_total_versions = confusion_matrix.correct_website_trusted + confusion_matrix.correct_website_not_trusted + confusion_matrix.wrong_website_trusted + confusion_matrix.wrong_website_not_trusted;
     let confusion_matrix_correct_guesses = confusion_matrix.correct_website_trusted + confusion_matrix.wrong_website_not_trusted;

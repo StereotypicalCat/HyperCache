@@ -2,7 +2,6 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import {getTime} from "./TimeManager.js";
 import randomInteger from 'random-int';
 
 
@@ -15,7 +14,8 @@ const __dirname = path.dirname(__filename);
 
 export class WebsiteManager{
 
-    constructor(simulation_parameters) {
+    constructor(simulation_parameters, timeManager) {
+        this.timeManager = timeManager;
         this.simulation_parameters = simulation_parameters;
         this.fakedPlaintextWebsites = null;
         this.localMode = true;
@@ -78,7 +78,7 @@ export class WebsiteManager{
         }
         let currentTime;
         if(specificSlot === -1){
-            currentTime = getTime();
+            currentTime = this.timeManager.getTime();
         }
         else{
             currentTime = specificSlot;
@@ -132,6 +132,7 @@ export class WebsiteManager{
     SetWebsiteFakedPlaintext = async (fakedPlaintextWebsites) => {
         this.fakedPlaintextWebsites = fakedPlaintextWebsites;
     }
+    timeManager;
 
     GetWebsiteFakedPlaintext = async () => {
 

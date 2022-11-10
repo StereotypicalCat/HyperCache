@@ -1,6 +1,5 @@
 import {convertPlaintextToHashTree} from "./TreeManager.js";
 import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
-import {getTime} from "./TimeManager.js";
 import {Mutex} from "async-mutex";
 
 /*
@@ -28,7 +27,8 @@ let maliciouswebsites = [
 
 
 export class PeerBehaviours {
-    constructor(simulation_parameters, website_manager) {
+    constructor(simulation_parameters, website_manager, timeManager) {
+        this.timeManager = timeManager;
         this.website_manager = website_manager;
         this.simulation_parameters = simulation_parameters;
         this.shouldStopPeersMutex = new Mutex();
@@ -108,7 +108,7 @@ export class PeerBehaviours {
             //console.log("new url: " + url)
             let response = await requester(url);
 
-            let timestamp = getTime();
+            let timestamp = this.timeManager.getTime();
             await this.doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
         }
     }
@@ -120,7 +120,7 @@ export class PeerBehaviours {
 
             let response = url + "_malicious"
 
-            let timestamp = getTime();
+            let timestamp = this.timeManager.getTime();
             await this.doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
         }
     }
@@ -137,13 +137,19 @@ export class PeerBehaviours {
                 doc = await requester(url);
             }
 
-            let timestamp = getTime();
+            let timestamp = this.timeManager.getTime();
             await this.doP2PProtocolWithPlaintext(doc, url, aol, peerNum, timestamp)
         }
     }
 
+    waitforme(milisec) {
+        return new Promise(resolve => {
+            setTimeout(() => { resolve('') }, milisec);
+        })
+    }
+
     startNetworkWithConfig = async () => {
-        const aol = new AppendOnlyLog(this.simulation_parameters);
+        const aol = new AppendOnlyLog(this.simulation_parameters, this.timeManager);
 
         await this.setPeerNumberStart(this.simulation_parameters.amount_of_pure_peers + this.simulation_parameters.amount_of_consistently_malicious_peers + this.simulation_parameters.amount_of_consistently_malicious_peers)
 
@@ -157,9 +163,9 @@ export class PeerBehaviours {
             this.startPeer(i, aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.sometimesMaliciousPeerStrategy, this.simulation_parameters)
         }
 
-        setTimeout(() => {
-            this.stopPeers();
-        }, this.simulation_parameters.max_time * 1000)
+        await this.waitforme(this.simulation_parameters.max_time * 1000)
+
+        await this.stopPeers();
 
         return aol;
     }

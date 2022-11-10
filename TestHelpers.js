@@ -1,10 +1,10 @@
-import {getTime} from "./TimeManager.js";
 import util from 'util';
 import _ from "lodash";
 import cliProgress from "cli-progress";
 import {TrustManager} from "./TrustManager.js";
 import {Mutex} from "async-mutex";
 import {Worker} from "worker_threads";
+import {defaultSimulationParameters} from "./SimulationParameters.js";
 
 export class TestHelpers {
 
@@ -16,14 +16,12 @@ export class TestHelpers {
         })
     }
 
-    constructor(trust_parameters, aol, endTime, websiteManager, simulation_parameters) {
+    constructor(trust_parameters, aol, websiteManager, simulation_parameters) {
         this.trust_parameters = trust_parameters;
         this.simulation_paramerets = simulation_parameters;
         this.websiteManager = websiteManager;
         this.trust_manager = new TrustManager(trust_parameters, aol);
         this.aol = aol;
-        this.endTime = endTime;
-
     }
 
     async setThreadData(trust_matrix, latest_version_length){
@@ -70,7 +68,7 @@ export class TestHelpers {
     printWebsiteTimelines = async (aol, withConfidence = false) => {
 
         let websites = await aol.read()
-        let endTime = getTime();
+        let endTime = this.simulation_paramerets.max_time;
         for (const [url] of websites) {
 
             console.log("==== " + url + " ====")
@@ -79,7 +77,7 @@ export class TestHelpers {
         }
     }
 
-    calculateConfusionMatrix = async (trust_settings) => {
+    calculateConfusionMatrix = async (endTime) => {
         // Calculates the confusion matrix for the aol
         // This means calculating true-positives, false-positive, true-negative, false-negative.
         // This is done by comparing the aol to the correct list of websites.
@@ -98,7 +96,7 @@ export class TestHelpers {
 
         for (const [url] of websites) {
 
-            let timeline = await this.trust_manager.calculate_approximate_timeline_of_url(url, this.endTime, true, false)
+            let timeline = await this.trust_manager.calculate_approximate_timeline_of_url(url, endTime, true, false)
 
             // Only unique trusted versions
             let trustedVersions = timeline.map((timelineObj) => {
@@ -145,7 +143,7 @@ export class TestHelpers {
 
     }
 
-    calculateTemporalCorrectnessStats = async (trust_settings) => {
+    calculateTemporalCorrectnessStats = async (endTime) => {
         // Get the websites from the aol
         let websites = await this.aol.read();
 
@@ -161,7 +159,7 @@ export class TestHelpers {
 
         for (const [url] of websites) {
 
-            let timeline = await this.trust_manager.calculate_approximate_timeline_of_url(url, this.endTime, true)
+            let timeline = await this.trust_manager.calculate_approximate_timeline_of_url(url, endTime, true)
 
             // Make array with the correct version in each slot
             let correctVersions = []
@@ -209,7 +207,96 @@ export class TestHelpers {
 
     }
 
-    testDifferentValuesOfLogisticFunction = async (endTime) => {
+    testDifferentSimulationParameters = async() => {
+
+        let total_data = []
+
+        let unfinishedThreads = 0;
+        const unfinishedThreadsMutex = new Mutex();
+        const statisticsArrayMutex = new Mutex();
+
+        let threadsRun = 0;
+
+        for (let max_time_to_test = 10; max_time_to_test <= 20; max_time_to_test += 10) {
+            for (let percent_malicious_to_test = 0.0; percent_malicious_to_test <= 0.5; percent_malicious_to_test += 0.1) {
+                for (let versions_to_generate_test = 2; versions_to_generate_test <= 2; versions_to_generate_test++) {
+                    for (let websites_to_generate_test = 2; websites_to_generate_test <= 2; websites_to_generate_test++) {
+
+                        let shouldCreateMoreThreads = false
+                        while (!shouldCreateMoreThreads) {
+                            const release = await unfinishedThreadsMutex.acquire();
+                            try {
+                                if (unfinishedThreads < 8){
+                                    threadsRun++;
+
+                                    unfinishedThreads++;
+                                    shouldCreateMoreThreads = true;
+                                }
+                            }
+                            finally {
+                                release();
+                            }
+                            await this.waitforme(100);
+                        }
+
+                        let newThreadParamteres = _.cloneDeep(defaultSimulationParameters);
+
+                        /// CHANGE THIS!!!
+                        let noOfMaliciousPeers = Math.ceil(percent_malicious_to_test * defaultSimulationParameters.amount_of_pure_peers);
+                        newThreadParamteres.amount_of_pure_peers = defaultSimulationParameters.amount_of_pure_peers - noOfMaliciousPeers;
+                        newThreadParamteres.amount_of_consistently_malicious_peers = noOfMaliciousPeers;
+                        /// CHANGE THIS!!!
+
+                        newThreadParamteres.max_time = max_time_to_test;
+                        newThreadParamteres.max_number_of_versions_per_website = versions_to_generate_test;
+                        newThreadParamteres.min_number_of_versions_per_website = versions_to_generate_test;
+                        newThreadParamteres.number_of_websites_to_generate = websites_to_generate_test;
+
+
+                        const worker = new Worker('./TestHelpers_simulation_worker.js', {
+                            workerData:
+                                {
+                                    simulation_parameters: newThreadParamteres,
+                                }
+                        })
+
+                        worker.once("message", async result => {
+                            const release1 = await statisticsArrayMutex.acquire();
+                            const release2 = await unfinishedThreadsMutex.acquire();
+                            try {
+                                total_data.push(...result);
+                                unfinishedThreads--;
+                            } finally {
+                                release1();
+                                release2();
+                            }
+                        });
+
+                    }
+
+                }
+            }
+        }
+
+        let allThreadsFinished = false;
+        while (!allThreadsFinished) {
+            const release = await unfinishedThreadsMutex.acquire();
+            try {
+                if (unfinishedThreads === 0) {
+                    allThreadsFinished = true;
+                }
+            } finally {
+                release();
+            }
+            await this.waitforme(1000);
+        }
+
+        console.log("Done")
+        return total_data;
+
+    }
+
+    testDifferentValuesOfLogisticFunction = async () => {
 
         let output_data = []
 
@@ -219,32 +306,29 @@ export class TestHelpers {
 
         let threadsRun = 0;
 
-        const startTime = new Date() / 1000;
-        console.log("Start time", startTime)
 
         /*    const minconfidence = testDiffernetValuesTimer.create(0.8, 0.4);
             const logistick = testDiffernetValuesTimer.create(7, 1);*/
 
         // This doesn't test different simulation parameters. Only different trust parameters.
-        for (let min_confidence_to_test = 0.2; min_confidence_to_test <= 0.35; min_confidence_to_test += 0.15) {
-            console.log("Did outer loop iteration")
-            for (let logistic_k_to_test = 0; logistic_k_to_test <= 4; logistic_k_to_test += 0.5) {
-                for (let logistic_x0_to_test = 0; logistic_x0_to_test <= 4; logistic_x0_to_test += 0.5) {
-                    for (let trust_for_new_resources_to_test = 1; trust_for_new_resources_to_test <= 6; trust_for_new_resources_to_test += 1) {
+        for (let min_confidence_to_test = 0.65; min_confidence_to_test <= 0.65; min_confidence_to_test += 0.15) {
+            for (let logistic_k_to_test = 0.5; logistic_k_to_test <= 0.5; logistic_k_to_test += 1) {
+                for (let logistic_x0_to_test = 3; logistic_x0_to_test <= 10; logistic_x0_to_test += 3) {
+                    for (let trust_for_new_resources_to_test = 1; trust_for_new_resources_to_test <= 1; trust_for_new_resources_to_test += 1) {
                         for (let trust_for_validating_resource_to_test = 1; trust_for_validating_resource_to_test <= 1; trust_for_validating_resource_to_test += 1) {
-                            for (let populous_multiplier_to_test = 0.00; populous_multiplier_to_test <= 0.25; populous_multiplier_to_test += 0.05) {
+                            for (let populous_multiplier_to_test = 0.00; populous_multiplier_to_test <= 0.0; populous_multiplier_to_test += 1) {
 
                                 let shouldCreateMoreThreads = false
                                 while (!shouldCreateMoreThreads) {
                                     const release = await unfinishedThreadsMutex.acquire();
                                     try {
-                                        if (unfinishedThreads < 14){
+                                        if (unfinishedThreads < 4){
                                             //console.log("Creating new thread as " + threadsRun + " threads have been run and " + unfinishedThreads + " are unfinished")
                                             threadsRun++;
-                                            if (threadsRun % 10 === 0){
-                                                console.log("Throughput: " + threadsRun / ((new Date() / 1000) - startTime) + " threads per second")
+                /*                            if (threadsRun % 10 === 0){
+                                                //console.log("Throughput: " + threadsRun / ((new Date() / 1000) - startTime) + " threads per second")
 
-                                            }
+                                            }*/
                                             unfinishedThreads++;
                                             shouldCreateMoreThreads = true;
                                         }
@@ -276,7 +360,6 @@ export class TestHelpers {
                                             trust_parameters: newThreadParamteres,
                                             simulation_parameters: this.simulation_paramerets,
                                             websites: await this.websiteManager.GetWebsiteFakedPlaintext(),
-                                            endTime: endTime,
                                             websitesAOL: info.websites,
                                             peersInSystem: info.peersInSystem
                                         }
@@ -316,7 +399,7 @@ export class TestHelpers {
         }
 
 
-        console.log("== FINAL Throughput: " + threadsRun / ((new Date() / 1000) - startTime) + " threads per second ==")
+       // console.log("== FINAL Throughput: " + threadsRun / ((new Date() / 1000) - startTime) + " threads per second ==")
 
         console.log("Done")
         return output_data;

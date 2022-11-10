@@ -1,11 +1,22 @@
 // Works similairly to slots in blockchain.
 
-let startTime = -1;
+export class TimeManager {
 
-export let getTime = () => {
-    if (startTime === -1){
-        startTime = new Date().getTime() / 1000;
+    constructor(simIsDone = false) {
+        if (simIsDone) {
+            this.startTime = (new Date().getTime() / 1000) - 500;
+        }
     }
 
-    return (new Date().getTime() / 1000) - startTime;
+    startTime = -1;
+
+    getTime = () => {
+        if (this.startTime === -1){
+            this.startTime = new Date().getTime() / 1000;
+        }
+
+        return (new Date().getTime() / 1000) - this.startTime;
+    }
+
 }
+
