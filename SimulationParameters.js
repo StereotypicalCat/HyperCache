@@ -10,7 +10,7 @@ export const defaultTrustParameters = {
 }
 
 export const defaultSimulationParameters = {
-    amount_of_pure_peers: 15,
+    amount_of_pure_peers: 10,
     amount_of_consistently_malicious_peers: 0,
     amount_of_sometimes_malicious_peers: 0,
     // Max time in seconds that the simulation uses. Basically the time that the simulation runs.

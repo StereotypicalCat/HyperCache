@@ -14,7 +14,7 @@ async function calculateConfusionAndTemporalStats(workerData) {
 
     const new_time_manager = new TimeManager(true);
     const appendOnlyLog = new AppendOnlyLog(workerData.simulation_parameters, new_time_manager);
-    await appendOnlyLog.updateAOL(workerData.websitesAOL, workerData.peersInSystem);
+    await appendOnlyLog.updateAOL(workerData.websitesAOL, workerData.maxPeerNum);
 
     let testHelper = new TestHelpers(workerData.trust_parameters, appendOnlyLog, website_manager, workerData.simulation_parameters);
 

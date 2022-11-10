@@ -21,7 +21,7 @@ export class TrustManager {
 
         //console.log("Total number of peers: ", numberOfPeers)
 
-        return Array.from(Array(numberOfPeers).keys());
+        return numberOfPeers;
     }
 
     async calculate_user_trust_of_user(aol, peerIdSource, peerIdTarget) {
@@ -78,7 +78,11 @@ export class TrustManager {
             }
             if (isNaN(trustMatrix[i][peerId])) {
                 console.log("ful trust of user: NaN while calculating trust of " + peerId + " from " + i)
-                console.table(trustMatrix)
+                await this.get_unique_peers();
+
+
+
+                //console.table(trustMatrix)
             }
 
             userTrust += trustMatrix[i][peerId];
@@ -219,9 +223,9 @@ export class TrustManager {
 
         // Create 2d array of trust values between peers
         let trustMatrix = [];
-        for (let i = 0; i < uniquePeers.length; i++) {
+        for (let i = 0; i < uniquePeers; i++) {
             trustMatrix.push([]);
-            for (let j = 0; j < uniquePeers.length; j++) {
+            for (let j = 0; j < uniquePeers; j++) {
                 let test = await this.calculate_user_trust_of_user(this.aol, i, j);
                 if (isNaN(test)) {
                     console.log("NaN While calculating trust of " + i + " and " + j)

@@ -78,13 +78,15 @@ export class PeerBehaviours {
 
         let currentPeerNum = peerNum;
 
-        let mainLoop = async () => {
+        await aol.peerJoinsSystem(currentPeerNum);
 
-            await aol.peerJoinsSystem(currentPeerNum);
+        let mainLoop = async () => {
 
             if (await this.shouldStopPeersCheck()){
                 return;
             }
+
+            await aol.peerJoinsSystem(currentPeerNum);
 
             // print the second mark when the peer starts
             //console.log("Pure Peer " + peerNum + " starting again");
@@ -155,7 +157,7 @@ export class PeerBehaviours {
 
         for (let i = 0; i < this.simulation_parameters.amount_of_pure_peers; i++) {
             this.startPeer(i, aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.purePeerStrategy, this.simulation_parameters)
-        }
+       }
         for (let i = this.simulation_parameters.amount_of_pure_peers; i < this.simulation_parameters.amount_of_pure_peers + this.simulation_parameters.amount_of_consistently_malicious_peers; i++) {
             this.startPeer(i, aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.consistentlyMaliciousPeerStrategy, this.simulation_parameters)
         }
@@ -163,9 +165,15 @@ export class PeerBehaviours {
             this.startPeer(i, aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.sometimesMaliciousPeerStrategy, this.simulation_parameters)
         }
 
-        await this.waitforme(this.simulation_parameters.max_time * 1000)
+
+        // Below is dumv and should just be done based on timemanager in the stopPeers function. Too bad!
+        await this.waitforme((this.simulation_parameters.max_time) * 1000)
 
         await this.stopPeers();
+
+        // Wait for all peers to successfully stop.
+        await this.waitforme(5 * 1000)
+
 
         return aol;
     }

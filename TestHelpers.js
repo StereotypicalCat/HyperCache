@@ -217,8 +217,8 @@ export class TestHelpers {
 
         let threadsRun = 0;
 
-        for (let max_time_to_test = 10; max_time_to_test <= 20; max_time_to_test += 10) {
-            for (let percent_malicious_to_test = 0.0; percent_malicious_to_test <= 0.5; percent_malicious_to_test += 0.1) {
+        for (let max_time_to_test = 10; max_time_to_test <= 10; max_time_to_test += 10) {
+            for (let percent_malicious_to_test = 0; percent_malicious_to_test <= 0.5; percent_malicious_to_test += 0.05) {
                 for (let versions_to_generate_test = 2; versions_to_generate_test <= 2; versions_to_generate_test++) {
                     for (let websites_to_generate_test = 2; websites_to_generate_test <= 2; websites_to_generate_test++) {
 
@@ -226,7 +226,7 @@ export class TestHelpers {
                         while (!shouldCreateMoreThreads) {
                             const release = await unfinishedThreadsMutex.acquire();
                             try {
-                                if (unfinishedThreads < 8){
+                                if (unfinishedThreads < 12){
                                     threadsRun++;
 
                                     unfinishedThreads++;
@@ -361,7 +361,7 @@ export class TestHelpers {
                                             simulation_parameters: this.simulation_paramerets,
                                             websites: await this.websiteManager.GetWebsiteFakedPlaintext(),
                                             websitesAOL: info.websites,
-                                            peersInSystem: info.peersInSystem
+                                            maxPeerNum: info.maxPeerNum
                                         }
                                 })
 

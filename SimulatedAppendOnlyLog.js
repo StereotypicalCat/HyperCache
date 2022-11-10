@@ -5,7 +5,7 @@ class AppendOnlyLog{
     constructor(simulation_parameters, timeManager){
         this.simulation_parameres = simulation_parameters;
         this.timeManager = timeManager;
-        this.peersInSystem = new Map();
+        this.maxPeerNum = -1;
         this.websites = new Map();
         this.logHistory = [];
         this.lock = new Mutex();
@@ -17,7 +17,7 @@ class AppendOnlyLog{
         try {
             returnData = {
                 websites: this.websites,
-                peersInSystem: this.peersInSystem,
+                maxPeerNum: this.maxPeerNum,
             };
         }
         finally {
@@ -27,12 +27,12 @@ class AppendOnlyLog{
     }
 
     // Incomplete As LogHistory will be missing but what can ya do
-    async updateAOL(websites, peersInSystem){
+    async updateAOL(websites, maxPeerNum){
         const release = await this.lock.acquire();
 
         try{
             this.websites = websites;
-            this.peersInSystem = peersInSystem;
+            this.maxPeerNum = maxPeerNum;
         }
         finally {
             release();
@@ -42,7 +42,7 @@ class AppendOnlyLog{
     async getNumberOfPeers(){
         const release = await this.lock.acquire();
         try {
-            return this.peersInSystem.size + 1;
+            return this.maxPeerNum + 1;
         }
         finally {
             release();
@@ -68,8 +68,8 @@ class AppendOnlyLog{
         const release = await this.lock.acquire();
 
         try {
-            if (!this.peersInSystem.has(peerId)){
-                this.peersInSystem.set(peerId, 1);
+            if (peerId > this.maxPeerNum){
+                this.maxPeerNum = peerId;
             }
         }
         finally {
