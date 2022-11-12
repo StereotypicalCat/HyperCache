@@ -69,14 +69,14 @@ export class TestHelpers {
         }
     }
 
-    printWebsiteTimelines = async (aol, withConfidence = false) => {
+    printWebsiteTimelines = async (aol, respectMinimumConfidence = false) => {
 
         let websites = await aol.read()
         let endTime = this.simulation_paramerets.max_time;
         for (const [url] of websites) {
 
             console.log("==== " + url + " ====")
-            let timeline = await this.trust_manager.calculate_approximate_timeline_of_url(url, endTime, withConfidence)
+            let timeline = await this.trust_manager.calculate_approximate_timeline_of_url(url, endTime, respectMinimumConfidence)
             console.log(util.inspect(timeline, {showHidden: false, depth: null, colors: true}))
         }
     }
@@ -265,7 +265,7 @@ export class TestHelpers {
                             /// CHANGE THIS!!!
                             let noOfMaliciousPeers = Math.ceil(percent_malicious_to_test * defaultSimulationParameters.amount_of_pure_peers);
                             newThreadParamteres.amount_of_pure_peers = defaultSimulationParameters.amount_of_pure_peers - noOfMaliciousPeers;
-                            newThreadParamteres.amount_of_consistently_malicious_peers = noOfMaliciousPeers;
+                            newThreadParamteres.amount_of_grouped_consistently_malicious_peers = noOfMaliciousPeers;
                             /// CHANGE THIS!!!
 
                             newThreadParamteres.max_time = max_time_to_test;

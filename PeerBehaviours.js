@@ -2,28 +2,6 @@ import {convertPlaintextToHashTree} from "./TreeManager.js";
 import {AppendOnlyLog} from "./SimulatedAppendOnlyLog.js";
 import {Mutex} from "async-mutex";
 
-/*
-let testUrls = [
-    'testUrl1',
-    'testUrl2',
-    'testUrl3',
-    'testUrl4'
-]
-
-let websites = [
-    '<!DOCTYPE html><html><body><p>This is a test <b>bold</b> text</p><p>Other text</p></body></html>',
-    '<!DOCTYPE html><html><body><p>This is a test <i>italic</i> text</p><p>Other text</p></body></html>',
-    '<!DOCTYPE html><html><body><p>What did alice say to me? asked bob</p></body></html>',
-    '<!DOCTYPE html><html><body><p>Alice says you look really good in that outfit</p></body></html>'
-]
-
-let maliciouswebsites = [
-    '<!DOCTYPE html><html><body><p>This is a test <b>italic</b> text</p><p>Other text</p></body></html>',
-    '<!DOCTYPE html><html><body><p>This is a test <i>bold</i> text</p><p>Other text</p></body></html>',
-    '<!DOCTYPE html><html><body><p>What did alice say to me? bob violently asked</p></body></html>',
-    '<!DOCTYPE html><html><body><p>Alice says you look absolutely terrible</p></body></html>'
-]
-*/
 
 
 export class PeerBehaviours {
@@ -70,13 +48,16 @@ export class PeerBehaviours {
     }
 
 
-    startPeer = async (peerNum, aol, urls, requester, documentChangeStrategy) => {
+    startPeer = async (aol, urls, requester, documentChangeStrategy, doShuffles = true) => {
         const delayToWait = Math.max(Math.random() * this.simulation_parameters.max_peer_time_before_first_request * 1000, this.simulation_parameters.min_peer_time_before_first_request * 1000);
 
         const thisPeersUrls = [...urls]
-        this.shuffle(thisPeersUrls)
 
-        let currentPeerNum = peerNum;
+        if (doShuffles){
+            this.shuffle(thisPeersUrls)
+        }
+
+        let currentPeerNum = await this.getNewPeerNumber();
 
         await aol.peerJoinsSystem(currentPeerNum);
 
@@ -94,7 +75,11 @@ export class PeerBehaviours {
             await documentChangeStrategy(currentPeerNum, aol, thisPeersUrls, requester)
 
             if (!(this.simulation_parameters.chance_a_peer_churns === 0) && Math.random() < this.simulation_parameters.chance_a_peer_churns){
-                this.shuffle(thisPeersUrls)
+
+                if (doShuffles){
+                    this.shuffle(thisPeersUrls)
+                }
+
                 currentPeerNum = await this.getNewPeerNumber();
                 //console.log("Peer " + peerNum + " has churned to " + currentPeerNum);
             }
@@ -115,12 +100,24 @@ export class PeerBehaviours {
         }
     }
 
-    consistentlyMaliciousPeerStrategy = async (peerNum, aol, urls, requester, simulation_params) => {
+    consistentlyMaliciousGroupedPeerStrategy = async (peerNum, aol, urls, requester, simulation_params) => {
         for (const url of urls){
             //console.log("Peer " + peerNum + " requesting " + url);
             //console.log("new url: " + url)
 
-            let response = url + "_malicious"
+            let response = url + "_grouped_malicious"
+
+            let timestamp = this.timeManager.getTime();
+            await this.doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
+        }
+    }
+
+    consistentlyMaliciousSoloPeerStrategy = async (peerNum, aol, urls, requester) => {
+        for (const url of urls){
+            //console.log("Peer " + peerNum + " requesting " + url);
+            //console.log("new url: " + url)
+
+            let response = `${url}_grouped_malicious_${peerNum}`
 
             let timestamp = this.timeManager.getTime();
             await this.doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
@@ -128,12 +125,12 @@ export class PeerBehaviours {
     }
 
 // Might be malicious, but might also sometimes just get served a different url such as a regional different page but with the same url.
-    sometimesMaliciousPeerStrategy = async (peerNum, aol, urls, requester) => {
+    sometimesMaliciousGroupedPeerStrategy = async (peerNum, aol, urls, requester) => {
         for (const url of urls){
 
             let doc;
             if (Math.random() <= this.simulation_parameters.chance_of_sometimes_being_malicious){
-                doc = url + "_malicious";
+                doc = url + "_sometimes_malicious";
             }
             else{
                 doc = await requester(url);
@@ -144,6 +141,113 @@ export class PeerBehaviours {
         }
     }
 
+    sometimesMaliciousSoloPeerStrategy = async (peerNum, aol, urls, requester) => {
+        for (const url of urls){
+
+            let doc;
+            if (Math.random() <= this.simulation_parameters.chance_of_sometimes_being_malicious){
+                doc = url + `_sometimes_malicious_${peerNum}`;
+            }
+            else{
+                doc = await requester(url);
+            }
+
+            let timestamp = this.timeManager.getTime();
+            await this.doP2PProtocolWithPlaintext(doc, url, aol, peerNum, timestamp)
+        }
+    }
+
+    sometimesMaliciousSpecificSiteSoloPeerStrategy = async (peerNum, aol, urls, requester) => {
+        let numberOfUrlsToPostMaliciously = Math.round(urls.length * this.simulation_parameters.amount_of_websites_to_post_bad_info_on);
+
+        for (const url of urls){
+
+            let doc;
+            if (numberOfUrlsToPostMaliciously > 0){
+                doc = url + `_sometimes_malicious_specific_site_${peerNum}`;
+                numberOfUrlsToPostMaliciously--;
+            }
+            else{
+                doc = await requester(url);
+            }
+
+            let timestamp = this.timeManager.getTime();
+            await this.doP2PProtocolWithPlaintext(doc, url, aol, peerNum, timestamp)
+        }
+    }
+
+    // DONT SHUFFLE THE URLS OR YOU WILL BE CURSED.
+    sometimesMaliciousSpecificSiteGroupedPeerStrategy = async (peerNum, aol, urls, requester) => {
+        let numberOfUrlsToPostMaliciously = Math.round(urls.length * this.simulation_parameters.amount_of_websites_to_post_bad_info_on);
+
+        for (const url of urls){
+
+            let doc;
+            if (numberOfUrlsToPostMaliciously > 0){
+                doc = url + `_sometimes_malicious_specific_site`;
+                numberOfUrlsToPostMaliciously--;
+            }
+            else{
+                doc = await requester(url);
+            }
+
+            let timestamp = this.timeManager.getTime();
+            await this.doP2PProtocolWithPlaintext(doc, url, aol, peerNum, timestamp)
+        }
+    }
+
+    pastFocusedOneVersionPeers = async (peerNum, aol, urls, requester) => {
+        for (const url of urls){
+            //console.log("Peer " + peerNum + " requesting " + url);
+            //console.log("new url: " + url)
+            // (url, withDelay = true, specificSlot = -1)
+            // From https://bobbyhadz.com/blog/javascript-get-first-number-in-string
+            const numIndex = url.search(/[0-9]/);
+            const firstNum = Number(url[numIndex]);
+
+            let response = `correctHash${firstNum}_version0`;
+
+            let timestamp = this.timeManager.getTime();
+            await this.doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
+        }
+    }
+
+    // Slightly more tricky
+    pastFocusedLastVersionPeers = async (peerNum, aol, urls, requester) => {
+        for (const url of urls){
+            //console.log("Peer " + peerNum + " requesting " + url);
+            //console.log("new url: " + url)
+            // (url, withDelay = true, specificSlot = -1)
+            // From https://bobbyhadz.com/blog/javascript-get-first-number-in-string
+            let doc = await requester(url);
+
+            const numIndex = doc.search(/[0-9]/);
+            const firstNum = Number(doc[numIndex]);
+
+            // From https://stackoverflow.com/questions/66793081/getting-second-digit-in-a-string-using-javascript-regex
+            const versionNumber = doc.match(/\d+/g)?.[1];
+
+            let response = `correctHash${firstNum}_version${Math.max(0, versionNumber - 1)}`;
+
+            let timestamp = this.timeManager.getTime();
+            await this.doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
+        }
+    }
+
+    newVersionSpammerPeers = async (peerNum, aol, urls, requester) => {
+        for (const url of urls){
+
+            let response = `${url}_new_version_spammer_${peerNum}_version${this.timeManager.getTime()}`;
+
+            let timestamp = this.timeManager.getTime();
+            await this.doP2PProtocolWithPlaintext(response, url, aol, peerNum, timestamp)
+        }
+    }
+
+
+
+
+
     waitforme(milisec) {
         return new Promise(resolve => {
             setTimeout(() => { resolve('') }, milisec);
@@ -153,16 +257,36 @@ export class PeerBehaviours {
     startNetworkWithConfig = async () => {
         const aol = new AppendOnlyLog(this.simulation_parameters, this.timeManager);
 
-        await this.setPeerNumberStart(this.simulation_parameters.amount_of_pure_peers + this.simulation_parameters.amount_of_consistently_malicious_peers + this.simulation_parameters.amount_of_consistently_malicious_peers)
 
         for (let i = 0; i < this.simulation_parameters.amount_of_pure_peers; i++) {
-            this.startPeer(i, aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.purePeerStrategy, this.simulation_parameters)
+            this.startPeer(aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.purePeerStrategy)
        }
-        for (let i = this.simulation_parameters.amount_of_pure_peers; i < this.simulation_parameters.amount_of_pure_peers + this.simulation_parameters.amount_of_consistently_malicious_peers; i++) {
-            this.startPeer(i, aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.consistentlyMaliciousPeerStrategy, this.simulation_parameters)
+        for (let i = 0; i < this.simulation_parameters.amount_of_grouped_consistently_malicious_peers; i++) {
+            this.startPeer(aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.consistentlyMaliciousGroupedPeerStrategy)
         }
-        for (let i = this.simulation_parameters.amount_of_pure_peers + this.simulation_parameters.amount_of_consistently_malicious_peers; i < this.simulation_parameters.amount_of_pure_peers + this.simulation_parameters.amount_of_consistently_malicious_peers + this.simulation_parameters.amount_of_sometimes_malicious_peers; i++) {
-            this.startPeer(i, aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.sometimesMaliciousPeerStrategy, this.simulation_parameters)
+        for (let i = 0; i < this.simulation_parameters.amount_of_solo_consistently_malicious_peers; i++) {
+            this.startPeer(aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.consistentlyMaliciousSoloPeerStrategy)
+        }
+        for (let i = 0; i < this.simulation_parameters.amount_of_grouped_sometimes_malicious_peers; i++) {
+            this.startPeer(aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.sometimesMaliciousGroupedPeerStrategy)
+        }
+        for (let i = 0; i < this.simulation_parameters.amount_of_solo_sometimes_malicious_peers; i++) {
+            this.startPeer(aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.sometimesMaliciousSoloPeerStrategy)
+        }
+        for (let i = 0; i < this.simulation_parameters.amount_of_grouped_sometimes_malicious_specific_site_peers; i++) {
+            this.startPeer(aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.sometimesMaliciousSpecificSiteGroupedPeerStrategy, false)
+        }
+        for (let i = 0; i < this.simulation_parameters.amount_of_solo_sometimes_malicious_specific_site_peers; i++) {
+            this.startPeer(aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.sometimesMaliciousSpecificSiteSoloPeerStrategy)
+        }
+        for (let i = 0; i < this.simulation_parameters.amount_of_past_focused_one_version_peers; i++) {
+            this.startPeer(aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.pastFocusedOneVersionPeers)
+        }
+        for (let i = 0; i < this.simulation_parameters.amount_of_past_focused_last_version_peers; i++) {
+            this.startPeer(aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.pastFocusedLastVersionPeers)
+        }
+        for (let i = 0; i < this.simulation_parameters.amount_of_new_version_spammer_peers; i++) {
+            this.startPeer(aol, await this.website_manager.get_requestable_urls(), this.website_manager.request_website, this.newVersionSpammerPeers)
         }
 
 
@@ -190,16 +314,6 @@ export class PeerBehaviours {
         return toReturn;
     }
 
-
-    setPeerNumberStart = async (peerNum) => {
-        const release = await this.peerNumberMutex.acquire();
-        try {
-            this.nextPeerNum = peerNum;
-        }
-        finally {
-            release();
-        }
-    }
     getNewPeerNumber = async () => {
         const release = await this.peerNumberMutex.acquire();
 

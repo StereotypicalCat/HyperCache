@@ -156,7 +156,7 @@ export class TrustManager {
 
     }
 
-    async calculate_approximate_timeline_of_url(url, endOfTimelineSlot, withConfidence = false, respectMinimumConfidence = true) {
+    async calculate_approximate_timeline_of_url(url, endOfTimelineSlot, respectMinimumConfidence = true) {
         let websites = await this.aol.read()
 
         let calculatedTimeline = []
@@ -189,13 +189,21 @@ export class TrustManager {
             let trustedVersions = []
             for (const [hash] of hashes) {
                 let trust = trust_of_version_at_time_cache.get(hash)
+                let confidence;
+                if (totalTrustOfAllVersions === 0) {
+                    confidence = 0;
+                }
+                else{
+                    confidence = trust / totalTrustOfAllVersions;
+                }
+
                 //console.log(" hash: " + hash + " trust: " + trust)
                 if (respectMinimumConfidence) {
                     if (trust / totalTrustOfAllVersions > this.TrustSettings.minimum_confidence) {
-                        trustedVersions.push({hash: hash, confidence: trust / totalTrustOfAllVersions})
+                        trustedVersions.push({hash: hash, confidence: confidence})
                     }
                 } else {
-                    trustedVersions.push({hash: hash, confidence: trust / totalTrustOfAllVersions})
+                    trustedVersions.push({hash: hash, confidence: confidence})
                 }
 
             }

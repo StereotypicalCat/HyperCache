@@ -9,6 +9,29 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
+/*
+let testUrls = [
+    'testUrl1',
+    'testUrl2',
+    'testUrl3',
+    'testUrl4'
+]
+
+let websites = [
+    '<!DOCTYPE html><html><body><p>This is a test <b>bold</b> text</p><p>Other text</p></body></html>',
+    '<!DOCTYPE html><html><body><p>This is a test <i>italic</i> text</p><p>Other text</p></body></html>',
+    '<!DOCTYPE html><html><body><p>What did alice say to me? asked bob</p></body></html>',
+    '<!DOCTYPE html><html><body><p>Alice says you look really good in that outfit</p></body></html>'
+]
+
+let maliciouswebsites = [
+    '<!DOCTYPE html><html><body><p>This is a test <b>italic</b> text</p><p>Other text</p></body></html>',
+    '<!DOCTYPE html><html><body><p>This is a test <i>bold</i> text</p><p>Other text</p></body></html>',
+    '<!DOCTYPE html><html><body><p>What did alice say to me? bob violently asked</p></body></html>',
+    '<!DOCTYPE html><html><body><p>Alice says you look absolutely terrible</p></body></html>'
+]
+*/
+
 
 // https://stackoverflow.com/questions/10049557/reading-all-files-in-a-directory-store-them-in-objects-and-send-the-object
 
@@ -132,7 +155,6 @@ export class WebsiteManager{
     SetWebsiteFakedPlaintext = async (fakedPlaintextWebsites) => {
         this.fakedPlaintextWebsites = fakedPlaintextWebsites;
     }
-    timeManager;
 
     GetWebsiteFakedPlaintext = async () => {
 
