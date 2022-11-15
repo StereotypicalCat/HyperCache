@@ -21,9 +21,9 @@ async function calculateConfusionAndTemporalStats(workerData) {
     let confusion_matrix = await testHelper.calculateConfusionMatrix(workerData.simulation_parameters.max_time)
     let temporal_matrix = await testHelper.calculateTemporalCorrectnessStats(workerData.simulation_parameters.max_time);
 
-    let confusion_matrix_total_versions = confusion_matrix.correct_website_trusted + confusion_matrix.correct_website_not_trusted + confusion_matrix.wrong_website_trusted + confusion_matrix.wrong_website_not_trusted;
-    let confusion_matrix_correct_guesses = confusion_matrix.correct_website_trusted + confusion_matrix.wrong_website_not_trusted;
-    let confusion_matrix_score = confusion_matrix_correct_guesses / confusion_matrix_total_versions;
+    let confusion_matrix_best_score = confusion_matrix.correct_website_trusted + confusion_matrix.wrong_website_not_trusted;
+    let confusion_matrix_rep_system_score = confusion_matrix.correct_website_trusted - confusion_matrix.correct_website_not_trusted - confusion_matrix.wrong_website_trusted + confusion_matrix.wrong_website_not_trusted;
+    let confusion_matrix_score = confusion_matrix_rep_system_score / confusion_matrix_best_score;
 
     let temporal_correctness_score = temporal_matrix.url_correct_slot / temporal_matrix.total_slots;
 

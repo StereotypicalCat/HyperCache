@@ -21,8 +21,8 @@ export const defaultSimulationParameters = {
     amount_of_past_focused_last_version_peers: 0,
     amount_of_new_version_spammer_peers: 0,
     // Max time in seconds that the simulation uses. Basically the time that the simulation runs.
-    max_time: 20,
-    number_of_websites_to_generate: 10,
+    max_time: 40,
+    number_of_websites_to_generate: 6,
     // Meaning EXTRA versions. All websites have at least 1 version, that being at time 0.
     max_number_of_versions_per_website: 4,
     min_number_of_versions_per_website: 2,

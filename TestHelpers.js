@@ -180,29 +180,8 @@ export class TestHelpers {
                 for (let version of versionsInSlot) {
                     if (version === correctVersions[slot]) {
                         temporalCorrectnessMatrix.url_correct_slot++;
-                    } else {
-                        let correctVersionIndex = correctVersions.indexOf(version);
-
-                        if (correctVersionIndex === -1) {
-                            // This version not in timeline, ignore
-                            continue;
-                        }
-
-                        if (correctVersionIndex - slot > 0) {
-                            temporalCorrectnessMatrix.url_too_early++;
-                            temporalCorrectnessMatrix.total_distance += Math.abs(correctVersionIndex - slot);
-                        } else if (correctVersionIndex - slot < 0) {
-                            temporalCorrectnessMatrix.url_too_late++;
-                            temporalCorrectnessMatrix.total_distance += Math.abs(correctVersionIndex - slot);
-
-                        }
-
-                        temporalCorrectnessMatrix.maximum_distance = Math.max(temporalCorrectnessMatrix.maximum_distance, Math.abs(correctVersionIndex - slot))
-
                     }
                 }
-
-
             }
         }
 
