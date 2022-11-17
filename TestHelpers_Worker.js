@@ -21,9 +21,12 @@ async function calculateConfusionAndTemporalStats(workerData) {
     let confusion_matrix = await testHelper.calculateConfusionMatrix(workerData.simulation_parameters.max_time)
     let temporal_matrix = await testHelper.calculateTemporalCorrectnessStats(workerData.simulation_parameters.max_time);
 
-    let confusion_matrix_best_score = confusion_matrix.correct_website_trusted + confusion_matrix.wrong_website_not_trusted;
-    let confusion_matrix_rep_system_score = confusion_matrix.correct_website_trusted - confusion_matrix.correct_website_not_trusted - confusion_matrix.wrong_website_trusted + confusion_matrix.wrong_website_not_trusted;
-    let confusion_matrix_score = confusion_matrix_rep_system_score / confusion_matrix_best_score;
+    let totalCorrectWebsites = (confusion_matrix.correct_website_trusted + confusion_matrix.correct_website_not_trusted);
+    let correctWebsitesScore = totalCorrectWebsites === 0 ? 1 : confusion_matrix.correct_website_trusted / totalCorrectWebsites;
+    let totalIncorrectWebsites = (confusion_matrix.wrong_website_trusted + confusion_matrix.wrong_website_not_trusted);
+    let incorrectWebsiteScore = totalIncorrectWebsites === 0 ? 1 : confusion_matrix.wrong_website_not_trusted / totalIncorrectWebsites;
+
+    let confusion_matrix_score = (correctWebsitesScore + incorrectWebsiteScore) / 2;
 
     let temporal_correctness_score = temporal_matrix.url_correct_slot / temporal_matrix.total_slots;
 
@@ -37,7 +40,8 @@ async function calculateConfusionAndTemporalStats(workerData) {
         trust_for_validating_resource: workerData.trust_parameters.trust_for_validating_resource,
         populous_multiplier: workerData.trust_parameters.populous_multiplier,
         ...confusion_matrix,
-        ...temporal_matrix
+        ...temporal_matrix,
+        ...workerData.simulation_parameters
     };
 
 }

@@ -7,25 +7,52 @@ import {defaultSimulationParameters, defaultTrustParameters} from "./SimulationP
 import {PeerBehaviours} from "./PeerBehaviours.js";
 import {TimeManager} from "./TimeManager.js";
 
-let result = await RunSimulationAndCalculateStats(workerData)
-parentPort.postMessage(result);
+class SimulationWorker {
 
-async function RunSimulationAndCalculateStats(workerData) {
+    aol = null;
+    WebsiteManagerSimulator = null;
+    workerData;
 
-    let timeManager = new TimeManager();
-    let WebsiteManagerSimulator = new WebsiteManager(workerData.simulation_parameters, timeManager);
-    let PeerBehaviorSimulator = new PeerBehaviours(workerData.simulation_parameters, WebsiteManagerSimulator, timeManager);
-    let aol = await PeerBehaviorSimulator.startNetworkWithConfig();
+    constructor(workerData) {
+        this.workerData = workerData;
+    }
 
-    let testHelper = new TestHelpers(defaultTrustParameters, aol, WebsiteManagerSimulator, workerData.simulation_parameters);
-    let scores = await testHelper.testDifferentValuesOfLogisticFunction();
-    let withSimParams = scores.map((score) => {
-        return {
-            ...score,
-            ...workerData.simulation_parameters
-        }
-    })
+    async calculateStats() {
+        let testHelper = new TestHelpers(defaultTrustParameters, this.aol, this.WebsiteManagerSimulator, this.workerData.simulation_parameters);
+        let scores = await testHelper.testDifferentValuesOfLogisticFunction();
 
-    return withSimParams;
+        return scores;
+    }
 
+    async runSimulation() {
+
+        let timeManager = new TimeManager();
+        let WebsiteManagerSimulator = new WebsiteManager(workerData.simulation_parameters, timeManager);
+        let PeerBehaviorSimulator = new PeerBehaviours(workerData.simulation_parameters, WebsiteManagerSimulator, timeManager);
+        console.log("Starting simulation")
+
+        let aol = await PeerBehaviorSimulator.startNetworkWithConfig();
+        this.aol = aol;
+        this.WebsiteManagerSimulator = WebsiteManagerSimulator;
+        return;
+    }
 }
+
+const simulation_worker = new SimulationWorker(workerData);
+await simulation_worker.runSimulation();
+parentPort.postMessage("Sim-Done");
+parentPort.on('message', async (msg) => {
+    let result = await simulation_worker.calculateStats()
+    parentPort.postMessage(result);
+
+})
+
+
+
+
+
+
+
+
+
+

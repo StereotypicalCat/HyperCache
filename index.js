@@ -20,12 +20,9 @@ console.log(await WebsiteManagerSimulator.GetWebsiteFakedPlaintext());
 
 
 
-/*
 let testHelper = new TestHelpers(defaultTrustParameters, null, null, null, defaultSimulationParameters);
 
 //await testHelper.testSingleRun();
-
-
 
 let data = await testHelper.testDifferentSimulationParameters();
 
@@ -33,15 +30,18 @@ const csv = new ObjectsToCsv(data);
 
 // Save to file:
 const options = {append: true, bom: true};
-await csv.toDisk('./test-multi-sim.csv', options);*/
 
-let calculatePostStats = async (aol, websiteManager) => {
+console.log("Saving to file");
+await csv.toDisk('./test-chaos.csv', options);
+console.log("Finished Writing to File");
+
+/*let calculatePostStats = async (aol, websiteManager) => {
     console.log("calculating post stats...")
 
     let testHelper = new TestHelpers(defaultTrustParameters, aol, websiteManager, defaultSimulationParameters);
 
     await console.log(await websiteManager.GetWebsiteFakedPlaintext())
-    await testHelper.printWebsiteTimelines(aol, false)
+    await testHelper.printWebsiteTimelines(aol, false)*/
 
     //await printUsefulStats(aol);
 
@@ -72,10 +72,10 @@ let calculatePostStats = async (aol, websiteManager) => {
 
     // Return the CSV file as string:
 
-}
+//}
 
 
-console.log("Starting simulation...")
+/*console.log("Starting simulation...")
 let TimeManagerSimulator = new TimeManager();
 let WebsiteManagerSimulator = new WebsiteManager(defaultSimulationParameters, TimeManagerSimulator);
 let PeerBehaviorSimulator = new PeerBehaviours(defaultSimulationParameters, WebsiteManagerSimulator, TimeManagerSimulator);
@@ -85,7 +85,7 @@ console.log("Its uwu time, the sim should be done now")
 
 await calculatePostStats(aol, WebsiteManagerSimulator);
 
-console.log("Done uwu")
+console.log("Done uwu")*/
 
 
 /*let simulationTimeWithBuffer = defaultSimulationParameters.max_time + 3

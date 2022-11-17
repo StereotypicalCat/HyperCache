@@ -213,71 +213,99 @@ export class TestHelpers {
         const unfinishedThreadsMutex = new Mutex();
         const statisticsArrayMutex = new Mutex();
 
-        let threadsRun = 0;
+        const workers = [];
 
+        let threadsRun = 0;
+/*
         for (let amountToRepeatEachExperiment = 0; amountToRepeatEachExperiment <= 2; amountToRepeatEachExperiment++) {
             console.log("Round", amountToRepeatEachExperiment + 1, "of 3")
-            for (let max_time_to_test = 10; max_time_to_test <= 60; max_time_to_test += 10) {
-                for (let percent_malicious_to_test = 0; percent_malicious_to_test <= 0.5; percent_malicious_to_test += 0.05) {
-                    for (let versions_to_generate_test = 2; versions_to_generate_test <= 3; versions_to_generate_test++) {
-                        for (let websites_to_generate_test = 2; websites_to_generate_test <= 5; websites_to_generate_test++) {
+            for (let max_time_to_test = 40; max_time_to_test <= 40; max_time_to_test += 10) {
+                for (let noOfMaliciousPeersToTest = 2; noOfMaliciousPeersToTest <= 10; noOfMaliciousPeersToTest += 2) {
+                    console.log("noOfMaliciousPeersToTest", noOfMaliciousPeersToTest, "of 10")
+                    for (let versions_to_generate_test = 3; versions_to_generate_test <= 23; versions_to_generate_test += 10) {
+                        for (let websites_to_generate_test = 6; websites_to_generate_test <= 6; websites_to_generate_test++) {
+                            for (let churn_rate_to_test = 0; churn_rate_to_test <= 0.5; churn_rate_to_test += 0.25) {*/
 
-                            let shouldCreateMoreThreads = false
-                            while (!shouldCreateMoreThreads) {
-                                const release = await unfinishedThreadsMutex.acquire();
-                                try {
-                                    if (unfinishedThreads < 40){
-                                        threadsRun++;
+        for (let amountToRepeatEachExperiment = 0; amountToRepeatEachExperiment <= 0; amountToRepeatEachExperiment++) {
+            console.log("Round", amountToRepeatEachExperiment + 1, "of 3")
+            for (let max_time_to_test = 40; max_time_to_test <= 40; max_time_to_test += 10) {
+                for (let noOfMaliciousPeersToTest = 3; noOfMaliciousPeersToTest <= 3; noOfMaliciousPeersToTest += 3) {
+                    for (let versions_to_generate_test = 4; versions_to_generate_test <= 24; versions_to_generate_test += 10) {
+                        for (let websites_to_generate_test = 6; websites_to_generate_test <= 6; websites_to_generate_test++) {
+                            for (let churn_rate_to_test = 0.1; churn_rate_to_test <= 0.4; churn_rate_to_test += 0.15) {
 
-                                        unfinishedThreads++;
-                                        shouldCreateMoreThreads = true;
+                                let shouldCreateMoreThreads = false
+                                while (!shouldCreateMoreThreads) {
+                                    const release = await unfinishedThreadsMutex.acquire();
+                                    try {
+                                        if (unfinishedThreads < 50) {
+                                            threadsRun++;
+
+                                            unfinishedThreads++;
+                                            shouldCreateMoreThreads = true;
+                                        }
+                                    } finally {
+                                        release();
                                     }
+                                    await this.waitforme(100);
                                 }
-                                finally {
-                                    release();
-                                }
-                                await this.waitforme(100);
+
+                                let newThreadParamteres = _.cloneDeep(defaultSimulationParameters);
+
+                                /// CHANGE THIS!!!
+                                newThreadParamteres.amount_of_grouped_consistently_malicious_peers = noOfMaliciousPeersToTest;
+                                newThreadParamteres.amount_of_solo_consistently_malicious_peers = noOfMaliciousPeersToTest;
+                                newThreadParamteres.amount_of_grouped_sometimes_malicious_peers = noOfMaliciousPeersToTest;
+                                newThreadParamteres.amount_of_solo_sometimes_malicious_peers = noOfMaliciousPeersToTest;
+                                newThreadParamteres.amount_of_grouped_sometimes_malicious_specific_site_peers = noOfMaliciousPeersToTest;
+                                newThreadParamteres.amount_of_solo_sometimes_malicious_specific_site_peers = noOfMaliciousPeersToTest;
+                                newThreadParamteres.amount_of_past_focused_one_version_peers = noOfMaliciousPeersToTest;
+                                newThreadParamteres.amount_of_past_focused_last_version_peers = noOfMaliciousPeersToTest;
+                                newThreadParamteres.amount_of_new_version_spammer_peers = noOfMaliciousPeersToTest;
+                                /// CHANGE THIS!!!
+
+                                newThreadParamteres.max_time = max_time_to_test;
+                                newThreadParamteres.max_number_of_versions_per_website = versions_to_generate_test;
+                                newThreadParamteres.min_number_of_versions_per_website = versions_to_generate_test;
+                                newThreadParamteres.number_of_websites_to_generate = websites_to_generate_test;
+                                newThreadParamteres.chance_a_peer_churns = churn_rate_to_test;
+
+
+                                const worker = new Worker('./TestHelpers_simulation_worker.js', {
+                                    workerData:
+                                        {
+                                            simulation_parameters: newThreadParamteres,
+                                        }
+                                })
+
+                                workers.push(worker);
+
+                                worker.on("message", async result => {
+
+
+
+                                    const release1 = await statisticsArrayMutex.acquire();
+                                    const release2 = await unfinishedThreadsMutex.acquire();
+                                    try {
+                                        if (typeof result !== "string") {
+                                            total_data.push(...result);
+
+                                        }
+                                        unfinishedThreads--;
+                                    } finally {
+                                        release1();
+                                        release2();
+                                    }
+                                });
+
                             }
-
-                            let newThreadParamteres = _.cloneDeep(defaultSimulationParameters);
-
-                            /// CHANGE THIS!!!
-                            let noOfMaliciousPeers = Math.ceil(percent_malicious_to_test * defaultSimulationParameters.amount_of_pure_peers);
-                            newThreadParamteres.amount_of_pure_peers = defaultSimulationParameters.amount_of_pure_peers - noOfMaliciousPeers;
-                            newThreadParamteres.amount_of_grouped_consistently_malicious_peers = noOfMaliciousPeers;
-                            /// CHANGE THIS!!!
-
-                            newThreadParamteres.max_time = max_time_to_test;
-                            newThreadParamteres.max_number_of_versions_per_website = versions_to_generate_test;
-                            newThreadParamteres.min_number_of_versions_per_website = versions_to_generate_test;
-                            newThreadParamteres.number_of_websites_to_generate = websites_to_generate_test;
-
-
-                            const worker = new Worker('./TestHelpers_simulation_worker.js', {
-                                workerData:
-                                    {
-                                        simulation_parameters: newThreadParamteres,
-                                    }
-                            })
-
-                            worker.once("message", async result => {
-                                const release1 = await statisticsArrayMutex.acquire();
-                                const release2 = await unfinishedThreadsMutex.acquire();
-                                try {
-                                    total_data.push(...result);
-                                    unfinishedThreads--;
-                                } finally {
-                                    release1();
-                                    release2();
-                                }
-                            });
-
                         }
-
                     }
                 }
             }
         }
+
+        console.log("Waiting for all sims to finish")
         let allThreadsFinished = false;
         while (!allThreadsFinished) {
             const release = await unfinishedThreadsMutex.acquire();
@@ -291,12 +319,45 @@ export class TestHelpers {
             await this.waitforme(1000);
         }
 
+        // Now all threads should start simulations
+        console.log("Starting reputation calculations")
+
+        for (const worker of workers) {
+            worker.postMessage("start-sim");
+            const release2 = await unfinishedThreadsMutex.acquire();
+            try {
+                unfinishedThreads++;
+            } finally {
+                release2();
+            }
+        }
+
+
+        allThreadsFinished = false;
+        while (!allThreadsFinished) {
+            const release = await unfinishedThreadsMutex.acquire();
+            try {
+                if (unfinishedThreads === 0) {
+                    allThreadsFinished = true;
+                }
+                else{
+                    console.log("unfinishedThreads: ", unfinishedThreads)
+                }
+            } finally {
+                release();
+            }
+            await this.waitforme(3000);
+        }
+
+
         console.log("Done")
         return total_data;
 
     }
 
     testDifferentValuesOfLogisticFunction = async () => {
+
+        console.log("Doing the hard calculations.")
 
         let output_data = []
 
@@ -311,9 +372,9 @@ export class TestHelpers {
             const logistick = testDiffernetValuesTimer.create(7, 1);*/
 
         // This doesn't test different simulation parameters. Only different trust parameters.
-        for (let min_confidence_to_test = 0.25; min_confidence_to_test <= 0.65; min_confidence_to_test += 0.20) {
-            for (let logistic_k_to_test = 1; logistic_k_to_test <= 1; logistic_k_to_test += 1) {
-                for (let logistic_x0_to_test = 1; logistic_x0_to_test <= 5; logistic_x0_to_test += 1) {
+        for (let min_confidence_to_test = 0.30; min_confidence_to_test <= 0.75; min_confidence_to_test += 0.15) {
+            for (let logistic_k_to_test = 0.5; logistic_k_to_test <= 2.5; logistic_k_to_test += 1) {
+                for (let logistic_x0_to_test = 0; logistic_x0_to_test <= 10.5; logistic_x0_to_test += 3.5) {
                     for (let trust_for_new_resources_to_test = 1; trust_for_new_resources_to_test <= 1; trust_for_new_resources_to_test += 1) {
                         for (let trust_for_validating_resource_to_test = 1; trust_for_validating_resource_to_test <= 1; trust_for_validating_resource_to_test += 1) {
                             for (let populous_multiplier_to_test = 0.00; populous_multiplier_to_test <= 0.0; populous_multiplier_to_test += 1) {
@@ -322,7 +383,7 @@ export class TestHelpers {
                                 while (!shouldCreateMoreThreads) {
                                     const release = await unfinishedThreadsMutex.acquire();
                                     try {
-                                        if (unfinishedThreads < 2){
+                                        if (unfinishedThreads < 1){
                                             //console.log("Creating new thread as " + threadsRun + " threads have been run and " + unfinishedThreads + " are unfinished")
                                             threadsRun++;
                 /*                            if (threadsRun % 10 === 0){
